@@ -48,6 +48,21 @@ public class DatabaseCompatibilityMigration implements ApplicationRunner {
                     ALTER TABLE projects
                         ALTER COLUMN error_message TYPE TEXT
                         USING error_message::text;
+
+                    -- Phase 7 introduced method-level cyclomatic complexity.
+                    -- Existing demo databases may not have the column yet.
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = current_schema() AND table_name = 'code_methods'
+                    ) AND NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = current_schema()
+                          AND table_name = 'code_methods'
+                          AND column_name = 'cyclomatic_complexity'
+                    ) THEN
+                        ALTER TABLE code_methods
+                            ADD COLUMN cyclomatic_complexity INTEGER NOT NULL DEFAULT 1;
+                    END IF;
                 END IF;
             END $$;
             """);
