@@ -68,15 +68,17 @@ public class ArchitectureGraphService {
                 )).toList();
 
         List<Map<String, Object>> classRelationships = dependencies.stream()
-                .map(dependency -> Map.of(
-                        "sourceId", String.valueOf(dependency.getSourceClass().getId()),
-                        "targetId", String.valueOf(dependency.getTargetClass().getId()),
-                        "dependencyType", dependency.getType().name(),
-                        "sourceLine", dependency.getSourceLine(),
-                        "sourceMember", safe(dependency.getSourceMember()),
-                        "occurrenceCount", dependency.getOccurrenceCount(),
-                        "evidence", safe(dependency.getEvidence())
-                )).toList();
+                .map(dependency -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("sourceId", String.valueOf(dependency.getSourceClass().getId()));
+                    row.put("targetId", String.valueOf(dependency.getTargetClass().getId()));
+                    row.put("dependencyType", dependency.getType().name());
+                    row.put("sourceLine", dependency.getSourceLine());
+                    row.put("sourceMember", safe(dependency.getSourceMember()));
+                    row.put("occurrenceCount", dependency.getOccurrenceCount());
+                    row.put("evidence", safe(dependency.getEvidence()));
+                    return row;
+                }).toList();
 
         Map<String, PackageRelationship> packageRelationshipMap = new LinkedHashMap<>();
         for (CodeDependency dependency : dependencies) {
@@ -89,12 +91,14 @@ public class ArchitectureGraphService {
             relation.increment(dependency.getType().name());
         }
         List<Map<String, Object>> packageRelationships = packageRelationshipMap.values().stream()
-                .map(relation -> Map.of(
-                        "sourceId", packageId(projectId, relation.sourcePackage()),
-                        "targetId", packageId(projectId, relation.targetPackage()),
-                        "dependencyCount", relation.dependencyCount(),
-                        "dependencyTypes", relation.dependencyTypes()
-                )).toList();
+                .map(relation -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("sourceId", packageId(projectId, relation.sourcePackage()));
+                    row.put("targetId", packageId(projectId, relation.targetPackage()));
+                    row.put("dependencyCount", relation.dependencyCount());
+                    row.put("dependencyTypes", relation.dependencyTypes());
+                    return row;
+                }).toList();
 
         try (Session session = driver.session()) {
             session.run("MATCH (n) WHERE n.projectId = $projectId DETACH DELETE n",
