@@ -1,8 +1,8 @@
 package com.codeintel.api.dto;
 
-import java.util.List;
-
 import com.codeintel.project.ProjectStatus;
+
+import java.util.List;
 
 public record IngestionResponse(
         String projectId,
@@ -12,5 +12,18 @@ public record IngestionResponse(
         int javaFiles,
         int mainJavaFiles,
         int testJavaFiles,
-        List<String> sampleFiles
+        List<String> sampleFiles,
+        int classCount,
+        int interfaceCount,
+        int enumCount,
+        int recordCount,
+        int annotationCount,
+        int methodCount,
+        int constructorCount,
+        int fieldCount,
+        int importCount,
+        int parseErrorCount,
+        List<String> parseErrors,
+        List<String> discoveredTypes,
+        List<Long> classIds
 ) {}

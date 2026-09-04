@@ -41,3 +41,20 @@ input:focus { border-color: rgba(121,168,255,.55); }
 .sample-list code { color: #c8d5e5; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.035); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .next-step { margin-top: 16px; color: #7f92a8; font-size: 13px; }
 @media (max-width: 720px) { .app-shell { padding: 14px; } .hero { padding: 28px; } .metrics { display: grid; grid-template-columns: repeat(2, 1fr); } .card-heading, .result-title { align-items: flex-start; flex-direction: column; } }
+
+.metrics.secondary { margin-top: 10px; }
+.warning { color: #f6d897; background: rgba(245, 184, 63, .08); border: 1px solid rgba(245,184,63,.18); }
+.class-browser, .detail-card { margin-top: 20px; padding: 18px; border-radius: 16px; background: rgba(0,0,0,.12); border: 1px solid rgba(255,255,255,.06); }
+.section-title { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom: 14px; }
+.section-title span, .muted { color:#72869c; font-size:12px; }
+.class-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; max-height:320px; overflow:auto; }
+.class-list button { text-align:left; border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:10px 12px; color:#cfe0f3; background:rgba(255,255,255,.035); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.class-list button:hover { border-color:rgba(121,168,255,.35); background:rgba(121,168,255,.08); }
+.detail-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.detail-grid > div { display:grid; gap:4px; padding:12px; border-radius:10px; background:rgba(255,255,255,.035); }
+.detail-grid span, .detail-card h3 { color:#8295ab; font-size:12px; }
+.detail-card h3 { margin:18px 0 8px; }
+.item { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+.item code { color:#cfe0f3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.item span { color:#72869c; font-size:11px; white-space:nowrap; }
+@media (max-width: 720px) { .class-list, .detail-grid { grid-template-columns:1fr; } .item { flex-direction:column; } }

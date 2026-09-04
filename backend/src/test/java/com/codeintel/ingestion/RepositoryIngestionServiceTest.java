@@ -14,6 +14,9 @@ import java.util.zip.ZipOutputStream;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
 import com.codeintel.project.ProjectStatus;
+import com.codeintel.analysis.AstAnalysisService;
+import com.codeintel.analysis.CodeClassRepository;
+import com.codeintel.parser.model.AstAnalysisResult;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
@@ -49,7 +52,7 @@ class RepositoryIngestionServiceTest {
         Assertions.assertThat(response.javaFiles()).isEqualTo(3);
         Assertions.assertThat(response.mainJavaFiles()).isEqualTo(2);
         Assertions.assertThat(response.testJavaFiles()).isEqualTo(1);
-        Assertions.assertThat(response.status()).isEqualTo(ProjectStatus.READY);
+        Assertions.assertThat(response.status()).isEqualTo(ProjectStatus.ANALYZED);
     }
 
     private static Project project() {
@@ -68,7 +71,15 @@ class RepositoryIngestionServiceTest {
 
     private static RepositoryIngestionService newService(ProjectRepository repository) {
         RepositoryLimits limits = new RepositoryLimits(true, 1, 100, 100);
-        return new RepositoryIngestionService(repository, mock(GitHubRepositoryClient.class), limits);
+        AstAnalysisService astService = mock(AstAnalysisService.class);
+        try {
+            when(astService.analyze(any(Project.class), any())).thenReturn(
+                    new AstAnalysisResult(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, java.util.List.of(),
+                            java.util.List.of(), java.util.List.of()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return new RepositoryIngestionService(repository, mock(GitHubRepositoryClient.class), limits, astService, mock(CodeClassRepository.class));
     }
 
     private static byte[] zipWithEntry(String name, String contents) throws Exception {

@@ -3,6 +3,11 @@ package com.codeintel.api;
 import com.codeintel.api.dto.CreateProjectRequest;
 import com.codeintel.api.dto.IngestionResponse;
 import com.codeintel.api.dto.ProjectResponse;
+import com.codeintel.api.dto.AstAnalysisResponse;
+import com.codeintel.api.dto.CodeClassDetailResponse;
+import com.codeintel.analysis.CodeClassRepository;
+import com.codeintel.analysis.CodeFieldRepository;
+import com.codeintel.analysis.CodeMethodRepository;
 import com.codeintel.ingestion.RepositoryIngestionService;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
@@ -29,10 +34,18 @@ public class ProjectController {
 
     private final ProjectRepository projectRepository;
     private final RepositoryIngestionService ingestionService;
+    private final CodeClassRepository codeClassRepository;
+    private final CodeMethodRepository codeMethodRepository;
+    private final CodeFieldRepository codeFieldRepository;
 
-    public ProjectController(ProjectRepository projectRepository, RepositoryIngestionService ingestionService) {
+    public ProjectController(ProjectRepository projectRepository, RepositoryIngestionService ingestionService,
+                             CodeClassRepository codeClassRepository, CodeMethodRepository codeMethodRepository,
+                             CodeFieldRepository codeFieldRepository) {
         this.projectRepository = projectRepository;
         this.ingestionService = ingestionService;
+        this.codeClassRepository = codeClassRepository;
+        this.codeMethodRepository = codeMethodRepository;
+        this.codeFieldRepository = codeFieldRepository;
     }
 
     @PostMapping
@@ -72,6 +85,45 @@ public class ProjectController {
                                           @Valid @RequestBody GitHubIngestionRequest request) {
         return ingestionService.ingestGitHub(projectId, request.repositoryUrl());
     }
+
+    @GetMapping("/{projectId}/analysis/ast")
+    public AstAnalysisResponse astSummary(@PathVariable String projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
+        List<AstAnalysisResponse.ClassSummary> classes = codeClassRepository
+                .findAllByProject_IdOrderByQualifiedName(projectId)
+                .stream().limit(200).map(AstAnalysisResponse.ClassSummary::from).toList();
+        return new AstAnalysisResponse(projectId, project.getStatus().name(), project.getAstAnalyzedAt(),
+                nz(project.getClassCount()), nz(project.getInterfaceCount()), nz(project.getEnumCount()),
+                nz(project.getRecordCount()), nz(project.getAnnotationCount()), nz(project.getMethodCount()),
+                nz(project.getConstructorCount()), nz(project.getFieldCount()), nz(project.getImportCount()), nz(project.getParseErrorCount()),
+                project.getParseErrors() == null || project.getParseErrors().isBlank()
+                        ? List.of() : project.getParseErrors().lines().toList(), classes);
+    }
+
+    @GetMapping("/{projectId}/analysis/classes")
+    public List<AstAnalysisResponse.ClassSummary> classes(@PathVariable String projectId,
+                                                           @org.springframework.web.bind.annotation.RequestParam(defaultValue = "200") int limit,
+                                                           @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int offset) {
+        if (!projectRepository.existsById(projectId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found.");
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 500);
+        int safeOffset = Math.max(offset, 0);
+        return codeClassRepository.findAllByProject_IdOrderByQualifiedName(projectId)
+                .stream().skip(safeOffset).limit(safeLimit).map(AstAnalysisResponse.ClassSummary::from).toList();
+    }
+
+    @GetMapping("/{projectId}/analysis/classes/{classId}")
+    public CodeClassDetailResponse classDetail(@PathVariable String projectId, @PathVariable Long classId) {
+        var codeClass = codeClassRepository.findByIdAndProject_Id(classId, projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
+        return CodeClassDetailResponse.from(codeClass,
+                codeFieldRepository.findAllByCodeClass_IdOrderByLine(classId),
+                codeMethodRepository.findAllByCodeClass_IdOrderByStartLine(classId));
+    }
+
+    private int nz(Integer value) { return value == null ? 0 : value; }
 
     public record GitHubIngestionRequest(@NotBlank String repositoryUrl) {}
 }

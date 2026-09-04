@@ -17,6 +17,18 @@ public record ProjectResponse(
         Integer javaFiles,
         Integer mainJavaFiles,
         Integer testJavaFiles,
+        Integer classCount,
+        Integer interfaceCount,
+        Integer enumCount,
+        Integer recordCount,
+        Integer annotationCount,
+        Integer methodCount,
+        Integer constructorCount,
+        Integer fieldCount,
+        Integer importCount,
+        Integer parseErrorCount,
+        String parseErrors,
+        Instant astAnalyzedAt,
         Instant createdAt,
         Instant updatedAt,
         String errorMessage
@@ -25,7 +37,10 @@ public record ProjectResponse(
         return new ProjectResponse(
                 p.getId(), p.getName(), p.getSourceType(), p.getSourceUrl(), p.getStatus(),
                 p.getRepositorySizeBytes(), p.getTotalFiles(), p.getJavaFiles(),
-                p.getMainJavaFiles(), p.getTestJavaFiles(), p.getCreatedAt(), p.getUpdatedAt(), p.getErrorMessage()
+                p.getMainJavaFiles(), p.getTestJavaFiles(), p.getClassCount(), p.getInterfaceCount(),
+                p.getEnumCount(), p.getRecordCount(), p.getAnnotationCount(), p.getMethodCount(),
+                p.getConstructorCount(), p.getFieldCount(), p.getImportCount(), p.getParseErrorCount(), p.getParseErrors(), p.getAstAnalyzedAt(),
+                p.getCreatedAt(), p.getUpdatedAt(), p.getErrorMessage()
         );
     }
 }

@@ -13,6 +13,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import com.codeintel.api.dto.IngestionResponse;
+import com.codeintel.analysis.AstAnalysisService;
+import com.codeintel.analysis.CodeClassRepository;
+import com.codeintel.parser.model.AstAnalysisResult;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
 import com.codeintel.project.ProjectStatus;
@@ -26,13 +29,19 @@ public class RepositoryIngestionService {
     private final ProjectRepository projectRepository;
     private final GitHubRepositoryClient gitHubRepositoryClient;
     private final RepositoryLimits limits;
+    private final AstAnalysisService astAnalysisService;
+    private final CodeClassRepository codeClassRepository;
 
     public RepositoryIngestionService(ProjectRepository projectRepository,
                                       GitHubRepositoryClient gitHubRepositoryClient,
-                                      RepositoryLimits limits) {
+                                      RepositoryLimits limits,
+                                      AstAnalysisService astAnalysisService,
+                                      CodeClassRepository codeClassRepository) {
         this.projectRepository = projectRepository;
         this.gitHubRepositoryClient = gitHubRepositoryClient;
         this.limits = limits;
+        this.astAnalysisService = astAnalysisService;
+        this.codeClassRepository = codeClassRepository;
     }
 
     public IngestionResponse ingestZip(String projectId, MultipartFile file) {
@@ -95,15 +104,23 @@ public class RepositoryIngestionService {
     private IngestionResponse extractAndScan(Project project, Path zip, Path target) throws IOException {
         Files.createDirectories(target);
         ScanResult scan = extractZip(zip, target);
-        project.setStatus(ProjectStatus.READY);
         project.setRepositorySizeBytes(scan.uncompressedBytes());
         project.setTotalFiles(scan.totalFiles());
         project.setJavaFiles(scan.javaFiles());
         project.setMainJavaFiles(scan.mainJavaFiles());
         project.setTestJavaFiles(scan.testJavaFiles());
+
+        AstAnalysisResult ast = astAnalysisService.analyze(project, target);
+        var indexedClasses = codeClassRepository.findAllByProject_IdOrderByQualifiedName(project.getId()).stream()
+                .limit(50).toList();
         return new IngestionResponse(
                 project.getId(), project.getStatus(), scan.uncompressedBytes(), scan.totalFiles(),
-                scan.javaFiles(), scan.mainJavaFiles(), scan.testJavaFiles(), scan.sampleFiles());
+                scan.javaFiles(), scan.mainJavaFiles(), scan.testJavaFiles(), scan.sampleFiles(),
+                ast.classCount(), ast.interfaceCount(), ast.enumCount(), ast.recordCount(),
+                ast.annotationCount(), ast.methodCount(), ast.constructorCount(), ast.fieldCount(), ast.importCount(),
+                ast.parseErrorCount(), ast.parseErrors(),
+                indexedClasses.stream().map(c -> c.getQualifiedName()).toList(),
+                indexedClasses.stream().map(c -> c.getId()).toList());
     }
 
     private ScanResult extractZip(Path zip, Path target) throws IOException {

@@ -49,6 +49,43 @@ public class Project {
     @Column(name = "test_java_files")
     private Integer testJavaFiles;
 
+    @Column(name = "class_count")
+    private Integer classCount;
+
+    @Column(name = "interface_count")
+    private Integer interfaceCount;
+
+    @Column(name = "enum_count")
+    private Integer enumCount;
+
+    @Column(name = "record_count")
+    private Integer recordCount;
+
+    @Column(name = "annotation_count")
+    private Integer annotationCount;
+
+    @Column(name = "method_count")
+    private Integer methodCount;
+
+    @Column(name = "constructor_count")
+    private Integer constructorCount;
+
+    @Column(name = "field_count")
+    private Integer fieldCount;
+
+    @Column(name = "import_count")
+    private Integer importCount;
+
+    @Column(name = "parse_error_count")
+    private Integer parseErrorCount;
+
+    @Lob
+    @Column(name = "parse_errors")
+    private String parseErrors;
+
+    @Column(name = "ast_analyzed_at")
+    private Instant astAnalyzedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -60,18 +97,14 @@ public class Project {
 
     @PrePersist
     void onCreate() {
-        if (id == null) {
-            id = UUID.randomUUID().toString();
-        }
+        if (id == null) id = UUID.randomUUID().toString();
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;
     }
 
     @PreUpdate
-    void onUpdate() {
-        updatedAt = Instant.now();
-    }
+    void onUpdate() { updatedAt = Instant.now(); }
 
     public String getId() { return id; }
     public String getName() { return name; }
@@ -83,6 +116,18 @@ public class Project {
     public Integer getJavaFiles() { return javaFiles; }
     public Integer getMainJavaFiles() { return mainJavaFiles; }
     public Integer getTestJavaFiles() { return testJavaFiles; }
+    public Integer getClassCount() { return classCount; }
+    public Integer getInterfaceCount() { return interfaceCount; }
+    public Integer getEnumCount() { return enumCount; }
+    public Integer getRecordCount() { return recordCount; }
+    public Integer getAnnotationCount() { return annotationCount; }
+    public Integer getMethodCount() { return methodCount; }
+    public Integer getConstructorCount() { return constructorCount; }
+    public Integer getFieldCount() { return fieldCount; }
+    public Integer getImportCount() { return importCount; }
+    public Integer getParseErrorCount() { return parseErrorCount; }
+    public String getParseErrors() { return parseErrors; }
+    public Instant getAstAnalyzedAt() { return astAnalyzedAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public String getErrorMessage() { return errorMessage; }
@@ -91,10 +136,22 @@ public class Project {
     public void setSourceType(SourceType sourceType) { this.sourceType = sourceType; }
     public void setSourceUrl(String sourceUrl) { this.sourceUrl = sourceUrl; }
     public void setStatus(ProjectStatus status) { this.status = status; }
-    public void setRepositorySizeBytes(Long repositorySizeBytes) { this.repositorySizeBytes = repositorySizeBytes; }
-    public void setTotalFiles(Integer totalFiles) { this.totalFiles = totalFiles; }
-    public void setJavaFiles(Integer javaFiles) { this.javaFiles = javaFiles; }
-    public void setMainJavaFiles(Integer mainJavaFiles) { this.mainJavaFiles = mainJavaFiles; }
-    public void setTestJavaFiles(Integer testJavaFiles) { this.testJavaFiles = testJavaFiles; }
+    public void setRepositorySizeBytes(Long v) { repositorySizeBytes = v; }
+    public void setTotalFiles(Integer v) { totalFiles = v; }
+    public void setJavaFiles(Integer v) { javaFiles = v; }
+    public void setMainJavaFiles(Integer v) { mainJavaFiles = v; }
+    public void setTestJavaFiles(Integer v) { testJavaFiles = v; }
+    public void setClassCount(Integer v) { classCount = v; }
+    public void setInterfaceCount(Integer v) { interfaceCount = v; }
+    public void setEnumCount(Integer v) { enumCount = v; }
+    public void setRecordCount(Integer v) { recordCount = v; }
+    public void setAnnotationCount(Integer v) { annotationCount = v; }
+    public void setMethodCount(Integer v) { methodCount = v; }
+    public void setConstructorCount(Integer v) { constructorCount = v; }
+    public void setFieldCount(Integer v) { fieldCount = v; }
+    public void setImportCount(Integer v) { importCount = v; }
+    public void setParseErrorCount(Integer v) { parseErrorCount = v; }
+    public void setParseErrors(String v) { parseErrors = v; }
+    public void setAstAnalyzedAt(Instant v) { astAnalyzedAt = v; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 }

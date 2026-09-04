@@ -231,3 +231,14 @@ Annotations
 Imports
 Types
 ```
+
+## Phase 3 — Java AST & Symbol Extraction
+
+Repositories are now parsed with JavaParser and indexed into PostgreSQL as classes, interfaces, enums, records, methods, constructors, and fields. The current public deployment remains intentionally limited to small repositories.
+
+See `docs/PHASE_3.md` for details.
+
+
+### Phase 3 parser
+
+The backend now uses JavaParser 3.28.0 to parse Java 21 source and persist structural symbols for later dependency analysis. JavaParser 3.28.0 is published on Maven Central.
