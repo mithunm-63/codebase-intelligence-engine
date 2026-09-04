@@ -53,3 +53,7 @@ Repository AST and dependency analysis can complete even when Neo4j is temporari
 ### Neo4j sync regression fix
 - Fixed package-to-class containment sync to `UNWIND` each class row and use its explicit `packageId` parameter.
 - Prevents Neo4j `Expected $packageId, but got $projectId` errors during automatic graph synchronization.
+
+
+## Phase 7
+Added deterministic code hotspot and risk analysis with AST-derived cyclomatic complexity, fan-in/fan-out, class size, method size, and risk ranking APIs.

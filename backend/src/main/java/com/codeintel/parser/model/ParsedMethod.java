@@ -11,5 +11,6 @@ public record ParsedMethod(
         String thrownTypes,
         int startLine,
         int endLine,
-        int lineCount
+        int lineCount,
+        int cyclomaticComplexity
 ) {}

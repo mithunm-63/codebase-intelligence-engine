@@ -24,6 +24,9 @@ import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import com.github.javaparser.ast.nodeTypes.NodeWithModifiers;
 import com.github.javaparser.ast.type.Type;
@@ -175,7 +178,7 @@ public class JavaAstParser {
                 method.getSignature().asString(), modifiers(method), annotations(method),
                 join(method.getParameters().stream().map(Object::toString).toList()),
                 join(method.getThrownExceptions().stream().map(Type::asString).toList()),
-                lineStart(method), lineEnd(method), rangeLineCount(method));
+                lineStart(method), lineEnd(method), rangeLineCount(method), cyclomaticComplexity(method));
     }
 
     private ParsedMethod parseConstructor(ConstructorDeclaration constructor) {
@@ -183,7 +186,23 @@ public class JavaAstParser {
                 constructor.getSignature().asString(), modifiers(constructor), annotations(constructor),
                 join(constructor.getParameters().stream().map(Object::toString).toList()),
                 join(constructor.getThrownExceptions().stream().map(Type::asString).toList()),
-                lineStart(constructor), lineEnd(constructor), rangeLineCount(constructor));
+                lineStart(constructor), lineEnd(constructor), rangeLineCount(constructor), cyclomaticComplexity(constructor));
+    }
+
+    private int cyclomaticComplexity(Node node) {
+        int decisions = 0;
+        decisions += node.findAll(IfStmt.class).size();
+        decisions += node.findAll(ForStmt.class).size();
+        decisions += node.findAll(ForEachStmt.class).size();
+        decisions += node.findAll(WhileStmt.class).size();
+        decisions += node.findAll(DoStmt.class).size();
+        decisions += node.findAll(CatchClause.class).size();
+        decisions += node.findAll(ConditionalExpr.class).size();
+        decisions += (int) node.findAll(SwitchEntry.class).stream().filter(e -> !e.getLabels().isEmpty()).count();
+        decisions += (int) node.findAll(BinaryExpr.class).stream()
+                .filter(b -> b.getOperator() == BinaryExpr.Operator.AND || b.getOperator() == BinaryExpr.Operator.OR)
+                .count();
+        return Math.max(1, 1 + decisions);
     }
 
     private String enclosingTypePath(TypeDeclaration<?> type) {

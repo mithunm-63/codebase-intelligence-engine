@@ -114,3 +114,15 @@ input:focus { border-color: rgba(121,168,255,.55); }
   .analysis-card .metrics { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); }
   .detail-card .section-title { align-items:flex-start; flex-direction:column; }
 }
+.risk-dashboard { border-color: rgba(255,255,255,.08); }
+.hotspot-list { display:grid; gap:10px; margin-top:14px; }
+.hotspot-row { display:grid; grid-template-columns:minmax(0,1.5fr) auto minmax(220px,1fr); gap:16px; align-items:center; padding:12px; border:1px solid rgba(255,255,255,.06); border-radius:12px; background:rgba(255,255,255,.025); }
+.hotspot-main { min-width:0; display:grid; gap:5px; }
+.hotspot-main > div { display:flex; align-items:center; gap:9px; }
+.hotspot-main code { color:#72869c; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
+.hotspot-score { display:flex; align-items:baseline; gap:3px; min-width:60px; justify-content:flex-end; }
+.hotspot-score strong { font-size:24px; }
+.hotspot-score span { color:#72869c; font-size:11px; }
+.hotspot-metrics { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+.hotspot-metrics span { color:#8ea0b5; font-size:10px; padding:5px 7px; border-radius:7px; background:rgba(255,255,255,.04); }
+@media (max-width: 900px) { .hotspot-row { grid-template-columns:1fr; } .hotspot-score { justify-content:flex-start; } .hotspot-metrics { justify-content:flex-start; } }

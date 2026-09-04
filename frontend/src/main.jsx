@@ -135,6 +135,8 @@ function App() {
   const [impactError, setImpactError] = useState('')
   const [cycles, setCycles] = useState(null)
   const [cyclesLoading, setCyclesLoading] = useState(false)
+  const [risks, setRisks] = useState(null)
+  const [risksLoading, setRisksLoading] = useState(false)
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/health`)
@@ -180,6 +182,22 @@ function App() {
     }
   }
 
+  const loadRisks = async (projectId) => {
+    if (!projectId) return
+    setRisksLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/analysis/risks`)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not load risk analysis.')
+      setRisks(data)
+    } catch (err) {
+      setRisks(null)
+      setGraphMessage(err.message || 'Could not load risk analysis.')
+    } finally {
+      setRisksLoading(false)
+    }
+  }
+
   const analyzeImpact = async (classId, className = '') => {
     if (!result?.projectId || !classId) return
     setImpactLoading(true)
@@ -209,6 +227,7 @@ function App() {
       setGraphMessage(`Neo4j synchronized: ${data.classNodes} class nodes, ${data.classEdges} class edges, ${data.packageNodes} package nodes.`)
       await loadGraph(result.projectId, graphView)
       await loadCycles(result.projectId)
+      await loadRisks(result.projectId)
     } catch (err) {
       setGraphMessage(err.message || 'Could not synchronize the graph.')
       setGraphLoading(false)
@@ -257,6 +276,7 @@ function App() {
       setResult(ingestion)
       await loadGraph(ingestion.projectId, 'class')
       await loadCycles(ingestion.projectId)
+      await loadRisks(ingestion.projectId)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
@@ -383,6 +403,42 @@ function App() {
                     <code>{cycle.classes.join(' → ')} → {cycle.classes[0]}</code>
                   </div>
                 ))}
+              </div>
+
+              <div className="analysis-card risk-dashboard">
+                <div className="section-title">
+                  <div><strong>Code hotspots & risk</strong><span>Explainable structural risk from coupling, size, and AST complexity.</span></div>
+                  <span className="risk-badge high">{risksLoading ? 'Calculating…' : `Avg ${risks?.averageRiskScore ?? 0}/100`}</span>
+                </div>
+                {!risks && !risksLoading && <p className="muted">Risk analysis is not available yet.</p>}
+                {risks && (
+                  <>
+                    <div className="metrics secondary">
+                      <Stat value={risks.highRiskClasses} label="High risk" />
+                      <Stat value={risks.mediumRiskClasses} label="Medium risk" />
+                      <Stat value={risks.lowRiskClasses} label="Low risk" />
+                      <Stat value={risks.circularComponents} label="Circular components" />
+                    </div>
+                    <div className="hotspot-list">
+                      {risks.hotspots.map((hotspot) => (
+                        <div className="hotspot-row" key={hotspot.classId}>
+                          <div className="hotspot-main">
+                            <div><span className={`risk-badge ${hotspot.riskLevel.toLowerCase()}`}>{hotspot.riskLevel}</span><strong>{hotspot.name}</strong></div>
+                            <code>{hotspot.qualifiedName}</code>
+                          </div>
+                          <div className="hotspot-score"><strong>{hotspot.riskScore}</strong><span>/100</span></div>
+                          <div className="hotspot-metrics">
+                            <span>{hotspot.lineCount} LOC</span>
+                            <span>{hotspot.methodCount} methods</span>
+                            <span>fan-in {hotspot.fanIn}</span>
+                            <span>fan-out {hotspot.fanOut}</span>
+                            <span>CC {hotspot.maxMethodComplexity}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="class-browser">

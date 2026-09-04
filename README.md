@@ -273,3 +273,7 @@ Repository AST and dependency analysis can complete even when Neo4j is temporari
 
 ### Phase 5.1 Neo4j sync fix
 Automatic graph synchronization now correctly associates each class with its package using row-scoped `packageId` values.
+
+
+## Phase 7
+Added deterministic code hotspot and risk analysis with AST-derived cyclomatic complexity, fan-in/fan-out, class size, method size, and risk ranking APIs.

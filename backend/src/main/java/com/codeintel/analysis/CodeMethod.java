@@ -21,6 +21,7 @@ public class CodeMethod {
     private int startLine;
     private int endLine;
     private int lineCount;
+    private int cyclomaticComplexity = 1;
 
     public Long getId() { return id; }
     public CodeClass getCodeClass() { return codeClass; }
@@ -35,6 +36,7 @@ public class CodeMethod {
     public int getStartLine() { return startLine; }
     public int getEndLine() { return endLine; }
     public int getLineCount() { return lineCount; }
+    public int getCyclomaticComplexity() { return cyclomaticComplexity; }
 
     public void setCodeClass(CodeClass v) { codeClass = v; }
     public void setName(String v) { name = v; }
@@ -48,4 +50,5 @@ public class CodeMethod {
     public void setStartLine(int v) { startLine = v; }
     public void setEndLine(int v) { endLine = v; }
     public void setLineCount(int v) { lineCount = v; }
+    public void setCyclomaticComplexity(int v) { cyclomaticComplexity = Math.max(1, v); }
 }

@@ -11,6 +11,8 @@ import com.codeintel.analysis.CodeMethodRepository;
 import com.codeintel.analysis.CodeDependencyRepository;
 import com.codeintel.graph.ArchitectureGraphService;
 import com.codeintel.impact.ImpactAnalysisService;
+import com.codeintel.risk.RiskAnalysisService;
+import com.codeintel.api.dto.RiskAnalysisResponse;
 import com.codeintel.api.dto.ImpactAnalysisResponse;
 import com.codeintel.api.dto.CycleAnalysisResponse;
 import com.codeintel.api.dto.DependencyAnalysisResponse;
@@ -49,11 +51,13 @@ public class ProjectController {
     private final CodeDependencyRepository codeDependencyRepository;
     private final ArchitectureGraphService architectureGraphService;
     private final ImpactAnalysisService impactAnalysisService;
+    private final RiskAnalysisService riskAnalysisService;
 
     public ProjectController(ProjectRepository projectRepository, RepositoryIngestionService ingestionService,
                              CodeClassRepository codeClassRepository, CodeMethodRepository codeMethodRepository,
                              CodeFieldRepository codeFieldRepository, CodeDependencyRepository codeDependencyRepository,
-                             ArchitectureGraphService architectureGraphService, ImpactAnalysisService impactAnalysisService) {
+                             ArchitectureGraphService architectureGraphService, ImpactAnalysisService impactAnalysisService,
+                             RiskAnalysisService riskAnalysisService) {
         this.projectRepository = projectRepository;
         this.ingestionService = ingestionService;
         this.codeClassRepository = codeClassRepository;
@@ -62,6 +66,7 @@ public class ProjectController {
         this.codeDependencyRepository = codeDependencyRepository;
         this.architectureGraphService = architectureGraphService;
         this.impactAnalysisService = impactAnalysisService;
+        this.riskAnalysisService = riskAnalysisService;
     }
 
     @PostMapping
@@ -181,6 +186,16 @@ public class ProjectController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found.");
         }
         return ImpactAnalysisResponse.from(impactAnalysisService.analyze(projectId, String.valueOf(classId)));
+    }
+
+    @GetMapping("/{projectId}/analysis/risks")
+    public RiskAnalysisResponse risks(@PathVariable String projectId) {
+        return RiskAnalysisResponse.from(riskAnalysisService.analyzeProject(projectId));
+    }
+
+    @GetMapping("/{projectId}/analysis/risks/{classId}")
+    public RiskAnalysisResponse.Hotspot classRisk(@PathVariable String projectId, @PathVariable Long classId) {
+        return RiskAnalysisResponse.Hotspot.from(riskAnalysisService.analyzeClass(projectId, classId));
     }
 
     @GetMapping("/{projectId}/analysis/cycles")
