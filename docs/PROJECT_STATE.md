@@ -41,3 +41,7 @@ The application remains deployable through the same GitHub → Vercel/Render wor
 
 ### GitHub ingestion reliability fix
 The public GitHub client supports an optional `GITHUB_TOKEN` for authenticated GitHub API requests, sends the current GitHub API version header, uses the repository `zipball_url` returned by GitHub metadata when available, and returns actionable messages for 403/rate-limit/404 failures. Public repository URLs also accept `www.github.com` and strip query strings/fragments.
+### Phase 5 compiler fix — graph node generic types
+- Replaced `Map.of(...)` in `ArchitectureGraphService` class/package node stream mappings with explicit `LinkedHashMap<String, Object>` rows.
+- This prevents Java generic inference from producing `List<Map<String, String>>` where Neo4j parameter payloads require `List<Map<String, Object>>`.
+

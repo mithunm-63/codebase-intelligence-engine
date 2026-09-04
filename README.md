@@ -262,3 +262,7 @@ Blast radius
     ↓
 Change-impact intelligence
 ```
+
+
+### Phase 5 build fix
+`ArchitectureGraphService` uses explicit `Map<String, Object>` rows for Neo4j node payloads to avoid Java generic inference errors during Render builds.
