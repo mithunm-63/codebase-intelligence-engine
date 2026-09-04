@@ -27,3 +27,12 @@ Resolved dependency edges are persisted in PostgreSQL. `ProjectStatus.READY` is 
 ## Next phase
 
 Phase 5: project dependencies projected into Neo4j as the architecture graph, followed by graph-native traversal queries and graph visualization data.
+
+### Phase 4 compile fix
+- Updated `RepositoryIngestionServiceTest` to provide the newly required `DependencyAnalysisService` constructor dependency.
+- Updated the test expectation to `ProjectStatus.READY`, matching the current ingestion workflow.
+- Added a mocked `DependencyAnalysisResult` so the unit test remains isolated from the dependency persistence layer.
+
+## Phase 4 production fix
+
+Fixed PostgreSQL status-check and large-text-column compatibility discovered during Render deployment.

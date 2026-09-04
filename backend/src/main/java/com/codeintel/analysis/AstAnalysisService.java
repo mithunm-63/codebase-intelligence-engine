@@ -62,7 +62,7 @@ public class AstAnalysisService {
         String parseErrors = String.join("\n", result.parseErrors());
         project.setParseErrors(parseErrors.substring(0, Math.min(20000, parseErrors.length())));
         project.setAstAnalyzedAt(Instant.now());
-        project.setStatus(ProjectStatus.ANALYZED);
+        // RepositoryIngestionService owns the final READY transition after all analysis stages complete.
         projectRepository.save(project);
         return result;
     }

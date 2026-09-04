@@ -8,7 +8,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -86,15 +85,13 @@ public class Project {
     @Column(name = "unresolved_reference_count")
     private Integer unresolvedReferenceCount;
 
-    @Lob
-    @Column(name = "unresolved_references")
+    @Column(name = "unresolved_references", columnDefinition = "TEXT")
     private String unresolvedReferences;
 
     @Column(name = "parse_error_count")
     private Integer parseErrorCount;
 
-    @Lob
-    @Column(name = "parse_errors")
+    @Column(name = "parse_errors", columnDefinition = "TEXT")
     private String parseErrors;
 
     @Column(name = "ast_analyzed_at")
@@ -106,7 +103,7 @@ public class Project {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "error_message", length = 1000)
+    @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
     @PrePersist

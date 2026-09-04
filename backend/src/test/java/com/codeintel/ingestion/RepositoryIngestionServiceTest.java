@@ -16,6 +16,8 @@ import com.codeintel.project.ProjectRepository;
 import com.codeintel.project.ProjectStatus;
 import com.codeintel.analysis.AstAnalysisService;
 import com.codeintel.analysis.CodeClassRepository;
+import com.codeintel.analysis.DependencyAnalysisService;
+import com.codeintel.dependency.DependencyAnalysisResult;
 import com.codeintel.parser.model.AstAnalysisResult;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -52,7 +54,7 @@ class RepositoryIngestionServiceTest {
         Assertions.assertThat(response.javaFiles()).isEqualTo(3);
         Assertions.assertThat(response.mainJavaFiles()).isEqualTo(2);
         Assertions.assertThat(response.testJavaFiles()).isEqualTo(1);
-        Assertions.assertThat(response.status()).isEqualTo(ProjectStatus.ANALYZED);
+        Assertions.assertThat(response.status()).isEqualTo(ProjectStatus.READY);
     }
 
     private static Project project() {
@@ -79,7 +81,14 @@ class RepositoryIngestionServiceTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new RepositoryIngestionService(repository, mock(GitHubRepositoryClient.class), limits, astService, mock(CodeClassRepository.class));
+        DependencyAnalysisService dependencyService = mock(DependencyAnalysisService.class);
+        try {
+            when(dependencyService.analyze(any(Project.class), any())).thenReturn(
+                    new DependencyAnalysisResult(0, 0, 0, java.util.Map.of(), java.util.List.of(), java.util.List.of()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return new RepositoryIngestionService(repository, mock(GitHubRepositoryClient.class), limits, astService, dependencyService, mock(CodeClassRepository.class));
     }
 
     private static byte[] zipWithEntry(String name, String contents) throws Exception {

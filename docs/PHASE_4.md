@@ -125,3 +125,6 @@ GitHub
 ```
 
 The current public-demo limits remain unchanged.
+
+## Build fix
+The Phase 4 ingestion test was updated to match the expanded `RepositoryIngestionService` constructor by supplying a mocked `DependencyAnalysisService`. The expected post-ingestion status is `READY`, which matches the service implementation.
