@@ -122,3 +122,8 @@ GET /api/projects/{projectId}/analysis/dependencies
 GET /api/projects/{projectId}/analysis/classes/{classId}/dependencies
 GET /api/projects/{projectId}/analysis/classes/{classId}/dependents
 ```
+
+
+### Latest build fix
+
+If the previous Render build reported a missing version for `org.springframework.boot:spring-jdbc`, use this version of the project. The POM now uses `spring-boot-starter-jdbc`, so Maven receives the dependency version from the Spring Boot parent.
