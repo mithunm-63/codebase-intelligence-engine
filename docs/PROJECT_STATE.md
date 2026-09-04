@@ -1,35 +1,32 @@
 # Project State
 
 ## Current milestone
-Milestone 1 — Deployment-ready Foundation
+Milestone 2 — Repository ingestion + file discovery
 
 ## Completed
-- Root repository structure
-- Spring Boot backend skeleton
-- Java 21 configuration
-- PostgreSQL configuration via environment variables
-- Neo4j configuration via environment variables
-- Redis configuration via environment variables
-- Lightweight backend health endpoint
-- CORS configuration for Vercel → Render calls
-- React/Vite frontend shell with backend health check
-- Docker Compose infrastructure for local development
-- Backend Dockerfile for Render
-- Render Blueprint (`render.yaml`)
-- Vercel SPA configuration
-- Frontend environment configuration
-- GitHub Actions CI for backend and frontend
-- Demo-mode analysis limits prepared for later repository ingestion
-- Deployment guide
+- Milestone 1 deployment-ready foundation
+- Spring Boot REST API with health endpoint
+- React/Vite deployment-ready frontend
+- PostgreSQL, Neo4j and Redis configuration through environment variables
+- Docker Compose and Render/Vercel deployment configuration
+- Project persistence in PostgreSQL
+- Public GitHub repository ingestion
+- ZIP repository upload
+- ZIP path traversal protection
+- Repository upload/archive size limits
+- Total-file limit
+- Java-file limit
+- Ignoring `.git`, `target`, `node_modules`, and `.idea` content during ingestion
+- Maven-project-friendly source discovery metrics (`src/main/java`, `src/test/java`)
+- Project listing and project detail APIs
+- Frontend repository ingestion workflow
+- Unit tests for archive safety and Java-file/root counting
 
 ## Not yet implemented
-- Repository ingestion
-- GitHub repository cloning
-- ZIP upload
 - JavaParser AST extraction
 - Symbol resolution
-- Dependency graph
-- Neo4j domain model
+- Dependency extraction
+- Neo4j domain model and graph writes
 - Impact analysis
 - Cycle detection
 - Hotspot/risk engine
@@ -40,29 +37,23 @@ Milestone 1 — Deployment-ready Foundation
 - Background analysis jobs
 - Incremental analysis
 
-## Deployment target
+## Public demo ingestion policy
+- Public GitHub repositories only in GitHub mode
+- ZIP uploads accepted up to configured repository size
+- Java-file and total-file limits enforced server-side
+- Raw repository contents are processed in a temporary workspace and deleted after ingestion in this phase
+
+## Git deployment flow
 
 ```text
+Developer
+   ↓ git push
 GitHub
-  ├── Vercel → frontend
-  └── Render → Spring Boot API
-                ├── Neon PostgreSQL
-                ├── Neo4j AuraDB
-                └── Upstash Redis
+   ├── Vercel → frontend
+   └── Render → backend
 ```
 
-## Phase 1 demo policy
+Use the same repository for both services.
 
-The public deployment is intentionally a small demonstration environment. Configuration prepared in `render.yaml`:
-
-```text
-DEMO_MODE=true
-MAX_REPOSITORY_SIZE_MB=50
-MAX_JAVA_FILES=2000
-MAX_ANALYSIS_SECONDS=120
-```
-
-The limits become enforced when repository ingestion is implemented.
-
-## Next phase
-Milestone 2 — Repository ingestion + Java AST analysis.
+## Next milestone
+Milestone 3 — JavaParser AST + symbol extraction

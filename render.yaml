@@ -18,6 +18,10 @@ services:
         value: "2000"
       - key: MAX_ANALYSIS_SECONDS
         value: "120"
+      - key: MAX_UPLOAD_REQUEST_SIZE_MB
+        value: "60"
+      - key: MAX_FILES
+        value: "10000"
       - key: DB_URL
         sync: false
       - key: DB_USERNAME

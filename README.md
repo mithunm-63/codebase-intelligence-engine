@@ -1,38 +1,48 @@
 # Codebase Intelligence Engine
 
-A deployable static-analysis platform for Java/Spring Boot repositories that maps dependencies, detects architectural risks, and explains the blast radius of code changes.
+A deployable static-analysis platform for Java/Spring Boot repositories. Think of it as a **Google Maps for a codebase**: ingest a repository, build a structural model, map dependencies, detect architectural risks, and explain the blast radius of a change.
 
-## Product goal
+The core intelligence will come from our own Java analysis engine. An LLM will be added later as a grounded explanation/query layer rather than the source of truth.
 
-Think of this as a **Google Maps for a software codebase**.
+## Current milestone — Phase 2
 
-The final product will answer questions such as:
+Phase 2 adds **real repository ingestion and bounded source discovery** on top of the Phase 1 deployment foundation.
 
-- What breaks if I modify `PaymentService`?
-- Which classes have the highest architectural coupling?
-- Where are circular dependencies?
-- Which modules are becoming difficult to maintain?
-- What is the dependency path from controller → service → repository?
-- Why is a particular class risky?
+Supported inputs:
 
-The core intelligence will come from our own Java static-analysis engine. An LLM will be added later as an explanation/query layer rather than the source of truth.
+- Public GitHub HTTPS repository URL
+- ZIP upload
 
-## Phase 1 — deployment-ready foundation
+The ingestion layer currently:
 
-Included now:
+- creates a project record in PostgreSQL
+- downloads public GitHub repositories through the GitHub API + codeload archive
+- accepts ZIP uploads
+- enforces repository-size, total-file and Java-file limits
+- rejects unsafe ZIP paths
+- applies an uncompressed-size limit while extracting archives
+- ignores `.git`, `target`, `node_modules`, and `.idea`
+- counts total Java files, `src/main/java` files, and `src/test/java` files
+- returns a small sample of discovered repository paths
+- removes the temporary source workspace after the scan
 
-- Spring Boot 4.1.1 / Java 21 backend
-- React + Vite frontend
-- PostgreSQL, Neo4j, and Redis configuration
-- Docker Compose for local infrastructure
-- Dockerfile for Render deployment
-- `render.yaml` Blueprint for the backend
-- Vercel SPA configuration
-- CORS configuration driven by environment variables
-- Environment-variable based production configuration
-- Health endpoint for public deployment
-- GitHub Actions CI for backend and frontend
-- Demo-mode limits prepared for the future analyzer
+## Architecture
+
+```text
+GitHub / ZIP
+     ↓
+Repository Ingestion
+     ↓
+Safety + Size Limits
+     ↓
+Temporary Workspace
+     ↓
+File Discovery
+     ↓
+Project Metadata (PostgreSQL)
+     ↓
+Next: JavaParser AST + Symbols
+```
 
 ## Repository layout
 
@@ -40,24 +50,80 @@ Included now:
 codebase-intelligence-engine/
 ├── backend/
 │   ├── src/main/java/com/codeintel/
-│   ├── src/main/resources/application.yml
+│   │   ├── api/
+│   │   ├── ingestion/
+│   │   └── project/
 │   ├── src/test/
+│   ├── src/main/resources/application.yml
 │   ├── Dockerfile
 │   └── pom.xml
 ├── frontend/
 │   ├── src/
 │   ├── vercel.json
-│   ├── .env.example
 │   └── package.json
 ├── .github/workflows/
 ├── docs/
 ├── docker-compose.yml
 ├── render.yaml
-├── .env.example
 └── README.md
 ```
 
-## Local setup
+## API
+
+Create a project:
+
+```http
+POST /api/projects
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "payment-platform",
+  "sourceType": "GITHUB_PUBLIC",
+  "sourceUrl": "https://github.com/example/payment-platform"
+}
+```
+
+List projects:
+
+```http
+GET /api/projects
+```
+
+Get a project:
+
+```http
+GET /api/projects/{projectId}
+```
+
+Ingest a public GitHub repository:
+
+```http
+POST /api/projects/{projectId}/ingest/github
+Content-Type: application/json
+```
+
+```json
+{
+  "repositoryUrl": "https://github.com/example/payment-platform"
+}
+```
+
+Ingest a ZIP:
+
+```http
+POST /api/projects/{projectId}/ingest/zip
+Content-Type: multipart/form-data
+```
+
+Multipart field:
+
+```text
+file
+```
+
+## Local development
 
 Prerequisites:
 
@@ -65,23 +131,23 @@ Prerequisites:
 - Java 21+
 - Maven 3.9+
 - Node.js 22+
-- npm 10+
+- npm
 - Docker Desktop / Docker Engine with Compose
 
-Start local databases:
+Start databases:
 
 ```bash
 docker compose up -d
 ```
 
-Start the backend:
+Start backend:
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-Start the frontend:
+Start frontend:
 
 ```bash
 cd frontend
@@ -91,143 +157,77 @@ npm run dev
 
 Open:
 
-- Frontend: `http://localhost:5173`
-- Backend health: `http://localhost:8080/api/health`
-- Actuator health: `http://localhost:8080/actuator/health`
-- Neo4j browser: `http://localhost:7474`
-
-## GitHub + Vercel + Render deployment
-
-### 1. Push this repository to GitHub
-
-From the project root:
-
-```bash
-git init
-git branch -M main
-git add .
-git commit -m "chore: initialize deployable phase 1 foundation"
-git remote add origin https://github.com/YOUR_USERNAME/codebase-intelligence-engine.git
-git push -u origin main
+```text
+Frontend: http://localhost:5173
+Backend:  http://localhost:8080
+Health:   http://localhost:8080/api/health
 ```
 
-### 2. Deploy frontend on Vercel
-
-Create a Vercel project from the GitHub repository.
-
-Because this is a monorepo, set **Root Directory** to:
+## Public deployment
 
 ```text
-frontend
+GitHub
+  ├── Vercel → React frontend
+  └── Render → Spring Boot backend
+                ├── Neon → PostgreSQL
+                ├── Neo4j AuraDB → graph database
+                └── Upstash → Redis
 ```
 
-Vercel can then build the Vite app from that directory. Add this environment variable:
+Phase 2 still keeps the complete platform dependencies configurable, even though ingestion itself only persists project metadata in PostgreSQL and uses temporary filesystem storage.
 
-```text
-VITE_API_BASE_URL=https://YOUR-BACKEND.onrender.com
-```
-
-Redeploy after adding the variable.
-
-### 3. Deploy backend on Render
-
-Render can deploy the included `render.yaml` as a Blueprint from the repository root.
-
-The Blueprint points Render at:
-
-```text
-backend/Dockerfile
-```
-
-and uses `/api/health` as the health-check path.
-
-Set the following secret environment variables in Render:
-
-```text
-DB_URL
-DB_USERNAME
-DB_PASSWORD
-NEO4J_URI
-NEO4J_USERNAME
-NEO4J_PASSWORD
-REDIS_URL
-APP_CORS_ALLOWED_ORIGINS
-```
-
-Set `APP_CORS_ALLOWED_ORIGINS` to the exact Vercel URL, for example:
-
-```text
-https://your-project.vercel.app
-```
-
-### 4. Create the cloud data services
-
-The application expects managed services to provide connection details for:
-
-- PostgreSQL
-- Neo4j
-- Redis
-
-Recommended providers for a small portfolio demo are **Neon for PostgreSQL**, **Neo4j AuraDB Free**, and **Upstash Redis**, subject to their current free-tier availability and limits.
-
-Convert the provider connection information to the variables expected by Spring Boot. Never commit real passwords, tokens, or private connection strings to GitHub.
-
-### 5. Verify the live deployment
-
-Backend:
-
-```text
-https://YOUR-BACKEND.onrender.com/api/health
-```
-
-Frontend:
-
-```text
-https://YOUR-PROJECT.vercel.app
-```
-
-On the frontend, the API status card should report that the backend is online.
-
-## Public demo limits
-
-The Phase 1 configuration prepares the system for a constrained public demo:
+The public demo is intentionally bounded:
 
 ```text
 DEMO_MODE=true
 MAX_REPOSITORY_SIZE_MB=50
+MAX_UPLOAD_REQUEST_SIZE_MB=60
 MAX_JAVA_FILES=2000
-MAX_ANALYSIS_SECONDS=120
+MAX_FILES=10000
 ```
 
-These are application-level limits. Later phases will enforce them inside the repository ingestion and analysis engine.
+## Git workflow
 
-## Important deployment notes
+```bash
+git add .
+git commit -m "feat: add repository ingestion"
+git push
+```
 
-1. **Do not expose local database ports in production.** Docker Compose is for local development only.
-2. **Do not commit `.env` files or secrets.** Only `.env.example` belongs in GitHub.
-3. The backend listens on the platform-provided `PORT` environment variable, so Render can route traffic correctly.
-4. The `/api/health` endpoint deliberately does not require a database query, so the web service can report basic process health independently of external database availability.
-5. CORS is controlled by `APP_CORS_ALLOWED_ORIGINS`; update it after the Vercel URL is known.
-6. The public deployment is a demonstration environment, not an unlimited code-analysis service. Large repositories and many concurrent analyses will be handled later with queueing, resource controls, and incremental analysis.
+The connected Vercel and Render services can then deploy the new commit.
 
-## Future phases
+## Security
 
-1. Repository ingestion
-2. Java AST + symbol extraction
-3. Symbol resolution + dependency analysis
-4. Neo4j architecture graph
-5. Impact analysis + cycle detection
-6. Risk/hotspot engine
-7. Architecture rules + drift detection
-8. Full REST API
-9. React analysis dashboard
-10. Public deployment of the first real analyzer
-11. Grounded natural-language / LLM query layer
-12. GitHub integration
-13. Incremental analysis
-14. JWT + multi-user authorization
-15. Production hardening and CI/CD expansion
+The public GitHub ingestion mode supports only public `https://github.com/owner/repository` URLs. Private repository access is deferred until authentication, authorization, token handling, quotas, and auditing are implemented.
 
-## License
+The ZIP extractor validates normalized paths and applies both compressed-upload and uncompressed-content limits. Repository code is never executed during ingestion.
 
-Choose a license before publishing publicly (MIT is a common portfolio-project choice).
+## Testing
+
+Run backend tests with:
+
+```bash
+cd backend
+mvn test
+```
+
+The Phase 2 suite includes archive safety and source-root/file-count tests.
+
+## Next milestone
+
+**Phase 3 — JavaParser AST + symbol extraction**
+
+```text
+Java file
+   ↓
+JavaParser
+   ↓
+AST
+   ↓
+Classes
+Methods
+Fields
+Annotations
+Imports
+Types
+```

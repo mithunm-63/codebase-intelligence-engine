@@ -1,4 +1,9 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: ${MAX_REPOSITORY_SIZE_MB:50}MB
+      max-request-size: ${MAX_UPLOAD_REQUEST_SIZE_MB:60}MB
+
   application:
     name: codebase-intelligence-backend
 
@@ -48,3 +53,4 @@ app:
     max-repository-size-mb: ${MAX_REPOSITORY_SIZE_MB:50}
     max-java-files: ${MAX_JAVA_FILES:2000}
     max-analysis-seconds: ${MAX_ANALYSIS_SECONDS:120}
+    max-files: ${MAX_FILES:10000}
