@@ -30,3 +30,7 @@ For `PaymentService`:
 `PaymentService -> OrderService -> InvoiceService -> PaymentService`
 
 The impact endpoint reports direct dependents, the transitive blast radius, maximum graph depth, risk level, risk factors, and cycles involving the target class.
+
+### Build fix — September 2026
+
+Fixed the `ImpactAnalysisService.analyze(...)` return type to use the existing `ProjectImpactReport` record. This resolves the compiler error where `ImpactReport` was referenced but did not exist.

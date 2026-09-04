@@ -26,7 +26,7 @@ public class ImpactAnalysisService {
         this.projectRepository = projectRepository;
     }
 
-    public ImpactReport analyze(String projectId, String classId) {
+    public ProjectImpactReport analyze(String projectId, String classId) {
         requireProject(projectId);
         GraphSnapshot graph = loadGraph(projectId);
         Node target = graph.nodes.get(classId);
