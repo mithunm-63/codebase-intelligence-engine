@@ -28,5 +28,7 @@ public record IngestionResponse(
         int parseErrorCount,
         List<String> parseErrors,
         List<String> discoveredTypes,
-        List<Long> classIds
+        List<Long> classIds,
+        String graphStatus,
+        String graphError
 ) {}

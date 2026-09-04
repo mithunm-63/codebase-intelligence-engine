@@ -266,3 +266,6 @@ Change-impact intelligence
 
 ### Phase 5 build fix
 `ArchitectureGraphService` uses explicit `Map<String, Object>` rows for Neo4j node payloads to avoid Java generic inference errors during Render builds.
+
+### Neo4j availability behavior
+Repository AST and dependency analysis can complete even when Neo4j is temporarily unavailable. In that case the project is still marked `READY`, the response reports `graphStatus=UNAVAILABLE`, and the UI shows the Neo4j configuration error. Once Neo4j is reachable, use **Sync Neo4j** to rebuild the graph.

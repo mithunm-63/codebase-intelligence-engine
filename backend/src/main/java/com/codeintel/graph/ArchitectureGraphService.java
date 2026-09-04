@@ -188,6 +188,11 @@ public class ArchitectureGraphService {
                 return getPackageGraph(session, projectId, safeNodeLimit, safeEdgeLimit);
             }
             return getClassGraph(session, projectId, safeNodeLimit, safeEdgeLimit);
+        } catch (Exception ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Neo4j graph store is unavailable. Check NEO4J_URI, NEO4J_USERNAME and NEO4J_PASSWORD.",
+                    ex);
         }
     }
 

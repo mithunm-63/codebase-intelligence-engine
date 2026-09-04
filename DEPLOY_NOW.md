@@ -131,3 +131,6 @@ If the previous Render build reported a missing version for `org.springframework
 ## GitHub ingestion on Render
 
 Add `GITHUB_TOKEN` as a Render environment variable. This is recommended for the public demo because repeated repository analysis can exhaust GitHub's unauthenticated API rate allowance. Do not put the token in GitHub source control or the Vercel frontend.
+
+### Neo4j availability behavior
+Repository AST and dependency analysis can complete even when Neo4j is temporarily unavailable. In that case the project is still marked `READY`, the response reports `graphStatus=UNAVAILABLE`, and the UI shows the Neo4j configuration error. Once Neo4j is reachable, use **Sync Neo4j** to rebuild the graph.

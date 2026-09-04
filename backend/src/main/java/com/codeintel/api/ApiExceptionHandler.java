@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -22,5 +23,12 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleIngestion(IngestionException ex) {
         return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<Map<String, String>> handleStatus(ResponseStatusException ex) {
+        String reason = ex.getReason() == null ? "Request failed." : ex.getReason();
+        return org.springframework.http.ResponseEntity.status(ex.getStatusCode())
+                .body(Map.of("error", reason));
     }
 }

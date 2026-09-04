@@ -121,8 +121,21 @@ public class RepositoryIngestionService {
 
         AstAnalysisResult ast = astAnalysisService.analyze(project, target);
         DependencyAnalysisResult dependencies = dependencyAnalysisService.analyze(project, target);
-        architectureGraphService.syncProject(project.getId());
+
+        String graphStatus = "SYNCED";
+        String graphError = null;
+        try {
+            architectureGraphService.syncProject(project.getId());
+        } catch (Exception graphException) {
+            // Graph persistence is an optional downstream projection. A transient or
+            // missing Neo4j connection must not make an otherwise successful source/
+            // AST/dependency analysis fail.
+            graphStatus = "UNAVAILABLE";
+            graphError = rootCauseMessage(graphException);
+        }
+
         project.setStatus(ProjectStatus.READY);
+        project.setErrorMessage(null);
         projectRepository.save(project);
         var indexedClasses = codeClassRepository.findAllByProject_IdOrderByQualifiedName(project.getId()).stream()
                 .limit(50).toList();
@@ -134,7 +147,8 @@ public class RepositoryIngestionService {
                 dependencies.resolvedDependencyCount(), dependencies.dependencyOccurrences(), dependencies.unresolvedReferenceCount(),
                 ast.parseErrorCount(), ast.parseErrors(),
                 indexedClasses.stream().map(c -> c.getQualifiedName()).toList(),
-                indexedClasses.stream().map(c -> c.getId()).toList());
+                indexedClasses.stream().map(c -> c.getId()).toList(),
+                graphStatus, graphError);
     }
 
     private ScanResult extractZip(Path zip, Path target) throws IOException {
@@ -216,6 +230,17 @@ public class RepositoryIngestionService {
         String message = e.getMessage();
         project.setErrorMessage(message == null ? "Repository ingestion failed." : message);
         projectRepository.save(project);
+    }
+
+    private static String rootCauseMessage(Throwable throwable) {
+        Throwable current = throwable;
+        Throwable last = throwable;
+        while (current != null) {
+            last = current;
+            current = current.getCause();
+        }
+        String message = last.getMessage();
+        return message == null || message.isBlank() ? last.getClass().getSimpleName() : message;
     }
 
     private Path createWorkspace(String projectId) throws IOException {

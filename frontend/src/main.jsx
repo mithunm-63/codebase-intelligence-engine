@@ -274,6 +274,12 @@ function App() {
             <>
               <div className="result-card">
                 <div className="result-title"><strong>Repository analysis complete</strong><span>{result.projectId}</span></div>
+                {result.graphStatus === 'UNAVAILABLE' && (
+                  <div className="message warning">
+                    Source and dependency analysis completed, but Neo4j is currently unavailable. Configure NEO4J_URI, NEO4J_USERNAME and NEO4J_PASSWORD on Render, then use “Sync Neo4j”.
+                    {result.graphError ? ` (${result.graphError})` : ''}
+                  </div>
+                )}
                 <div className="metrics">
                   <Stat value={result.classCount + result.interfaceCount + result.enumCount + result.recordCount + result.annotationCount} label="Types" />
                   <Stat value={result.methodCount} label="Methods" />
