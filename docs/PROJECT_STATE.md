@@ -57,3 +57,8 @@ Use the same repository for both services.
 
 ## Next milestone
 Milestone 3 — JavaParser AST + symbol extraction
+
+
+## Build Fix — 2026-09-04
+
+Added an explicit `jackson-databind` Maven dependency because the GitHub repository ingestion client uses `ObjectMapper` and `JsonNode` to parse GitHub API responses.

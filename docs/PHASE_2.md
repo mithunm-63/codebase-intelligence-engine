@@ -84,3 +84,7 @@ The ingestion response contains:
 
 ## Design decision
 The source files are not stored permanently yet. This reduces privacy and storage concerns for the public demo. Phase 3 will consume the repository as part of a real analysis run, and a later phase can add object storage if persistent re-analysis is required.
+
+
+### Build dependency fix
+The backend explicitly declares `com.fasterxml.jackson.core:jackson-databind` because `GitHubRepositoryClient` parses GitHub API JSON with `ObjectMapper` and `JsonNode`.
