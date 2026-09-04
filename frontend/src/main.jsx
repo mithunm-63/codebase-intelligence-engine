@@ -130,6 +130,11 @@ function App() {
   const [graphLoading, setGraphLoading] = useState(false)
   const [graphMessage, setGraphMessage] = useState('')
   const [selectedNode, setSelectedNode] = useState(null)
+  const [impact, setImpact] = useState(null)
+  const [impactLoading, setImpactLoading] = useState(false)
+  const [impactError, setImpactError] = useState('')
+  const [cycles, setCycles] = useState(null)
+  const [cyclesLoading, setCyclesLoading] = useState(false)
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/health`)
@@ -142,6 +147,9 @@ function App() {
     if (!projectId) return
     setGraphLoading(true)
     setGraphMessage('')
+    setImpact(null)
+    setImpactError('')
+    setCycles(null)
     try {
       const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/analysis/graph?view=${view}&nodeLimit=120&edgeLimit=500`)
       const data = await response.json()
@@ -156,6 +164,40 @@ function App() {
     }
   }
 
+  const loadCycles = async (projectId) => {
+    if (!projectId) return
+    setCyclesLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/analysis/cycles`)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not load circular dependencies.')
+      setCycles(data)
+    } catch (err) {
+      setCycles(null)
+      setGraphMessage(err.message || 'Could not load circular dependencies.')
+    } finally {
+      setCyclesLoading(false)
+    }
+  }
+
+  const analyzeImpact = async (classId, className = '') => {
+    if (!result?.projectId || !classId) return
+    setImpactLoading(true)
+    setImpactError('')
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${result.projectId}/analysis/impact/${classId}`)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not calculate impact analysis.')
+      setImpact(data)
+      if (className) setSelectedNode((node) => node || { id: String(classId), name: className, qualifiedName: data.targetQualifiedName, kind: 'CLASS', packageName: '' })
+    } catch (err) {
+      setImpact(null)
+      setImpactError(err.message || 'Could not calculate impact analysis.')
+    } finally {
+      setImpactLoading(false)
+    }
+  }
+
   const syncGraph = async () => {
     if (!result?.projectId) return
     setGraphLoading(true)
@@ -166,6 +208,7 @@ function App() {
       if (!response.ok) throw new Error(data.error || 'Could not synchronize the graph.')
       setGraphMessage(`Neo4j synchronized: ${data.classNodes} class nodes, ${data.classEdges} class edges, ${data.packageNodes} package nodes.`)
       await loadGraph(result.projectId, graphView)
+      await loadCycles(result.projectId)
     } catch (err) {
       setGraphMessage(err.message || 'Could not synchronize the graph.')
       setGraphLoading(false)
@@ -213,6 +256,7 @@ function App() {
       }
       setResult(ingestion)
       await loadGraph(ingestion.projectId, 'class')
+      await loadCycles(ingestion.projectId)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
@@ -227,6 +271,8 @@ function App() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Could not load class detail.')
       setDetail(data)
+      setImpact(null)
+      setImpactError('')
     } catch (err) {
       setError(err.message)
       setDetail(null)
@@ -317,8 +363,26 @@ function App() {
                   <div className="selected-node">
                     <div><strong>{selectedNode.name}</strong><span>{selectedNode.kind} · {selectedNode.packageName}</span></div>
                     <code>{selectedNode.qualifiedName}</code>
+                    <button type="button" className="impact-button" onClick={() => analyzeImpact(selectedNode.id, selectedNode.name)} disabled={impactLoading}>
+                      {impactLoading ? 'Calculating impact…' : 'Analyze impact'}
+                    </button>
                   </div>
                 )}
+              </div>
+
+              <div className="analysis-card">
+                <div className="section-title">
+                  <div><strong>Circular dependencies</strong><span>Strongly connected class groups detected in the dependency graph.</span></div>
+                  <span className={cycles?.cycleCount ? 'risk-badge high' : 'risk-badge low'}>{cyclesLoading ? 'Checking…' : `${cycles?.cycleCount ?? 0} cycles`}</span>
+                </div>
+                {!cycles && !cyclesLoading && <p className="muted">Circular dependency analysis is unavailable until the graph is synchronized.</p>}
+                {cycles && cycles.cycleCount === 0 && <div className="empty-analysis">No circular class dependencies detected.</div>}
+                {cycles?.cycles?.map((cycle, index) => (
+                  <div className="cycle-row" key={`${cycle.classes.join('|')}-${index}`}>
+                    <div><span className={`risk-badge ${cycle.severity.toLowerCase()}`}>{cycle.severity}</span><strong>Cycle {index + 1}</strong></div>
+                    <code>{cycle.classes.join(' → ')} → {cycle.classes[0]}</code>
+                  </div>
+                ))}
               </div>
 
               <div className="class-browser">
@@ -333,9 +397,42 @@ function App() {
             </>
           )}
 
+          {impactError && <div className="message error">{impactError}</div>}
+
+          {impact && (
+            <div className="analysis-card impact-card">
+              <div className="section-title">
+                <div><strong>Change impact analysis</strong><span>Evidence-backed blast radius from the dependency graph.</span></div>
+                <span className={`risk-badge ${impact.riskLevel.toLowerCase()}`}>{impact.riskLevel} · {impact.riskScore}/100</span>
+              </div>
+              <div className="impact-target"><strong>{impact.targetClassName}</strong><code>{impact.targetQualifiedName}</code></div>
+              <div className="metrics">
+                <Stat value={impact.directDependents} label="Direct dependents" />
+                <Stat value={impact.transitiveAffectedClasses} label="Affected classes" />
+                <Stat value={impact.maxImpactDepth} label="Max depth" />
+                <Stat value={impact.graphEdges} label="Graph edges" />
+              </div>
+              <h3>Why this change is risky</h3>
+              <div className="factor-list">
+                {(impact.riskFactors || []).map((factor) => <div className="factor" key={factor}>✓ {factor}</div>)}
+              </div>
+              {impact.cyclesInvolvingTarget?.length > 0 && (
+                <><h3>Cycles involving this class</h3>{impact.cyclesInvolvingTarget.map((cycle, index) => <div className="cycle-row" key={`target-cycle-${index}`}><code>{cycle.join(' → ')} → {cycle[0]}</code></div>)}</>
+              )}
+              <h3>Affected classes</h3>
+              {(impact.affectedClasses || []).length === 0 && <p className="muted">No other project class is reachable through the dependency graph.</p>}
+              {(impact.affectedClasses || []).map((affected) => (
+                <div className="item" key={affected.classId}>
+                  <div><strong>{affected.name}</strong><code>{affected.qualifiedName}</code></div>
+                  <span>depth {affected.depth}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {detail && !detail.loading && (
             <div className="detail-card">
-              <div className="section-title"><strong>{detail.qualifiedName}</strong><span>{detail.kind} · {detail.lineCount} lines</span></div>
+              <div className="section-title"><div><strong>{detail.qualifiedName}</strong><span>{detail.kind} · {detail.lineCount} lines</span></div><button type="button" className="impact-button" onClick={() => analyzeImpact(detail.id, detail.name)} disabled={impactLoading}>{impactLoading ? 'Calculating impact…' : 'Analyze change impact'}</button></div>
               <div className="detail-grid">
                 <div><span>Source</span><code>{detail.sourcePath}</code></div>
                 <div><span>Lines</span><strong>{detail.startLine}–{detail.endLine}</strong></div>

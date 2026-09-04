@@ -12,3 +12,7 @@ Expected dependency patterns include:
 - repeated dependencies are aggregated with occurrence counts
 
 Upload the ZIP of this directory or publish it as a public GitHub repository and analyze it from the application.
+
+Phase 6 should report the PaymentService blast radius and the cycle:
+
+PaymentService -> OrderService -> InvoiceService -> PaymentService

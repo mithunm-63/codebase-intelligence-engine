@@ -10,6 +10,9 @@ import com.codeintel.analysis.CodeFieldRepository;
 import com.codeintel.analysis.CodeMethodRepository;
 import com.codeintel.analysis.CodeDependencyRepository;
 import com.codeintel.graph.ArchitectureGraphService;
+import com.codeintel.impact.ImpactAnalysisService;
+import com.codeintel.api.dto.ImpactAnalysisResponse;
+import com.codeintel.api.dto.CycleAnalysisResponse;
 import com.codeintel.api.dto.DependencyAnalysisResponse;
 import com.codeintel.api.dto.ArchitectureGraphResponse;
 import com.codeintel.api.dto.GraphSyncResponse;
@@ -45,11 +48,12 @@ public class ProjectController {
     private final CodeFieldRepository codeFieldRepository;
     private final CodeDependencyRepository codeDependencyRepository;
     private final ArchitectureGraphService architectureGraphService;
+    private final ImpactAnalysisService impactAnalysisService;
 
     public ProjectController(ProjectRepository projectRepository, RepositoryIngestionService ingestionService,
                              CodeClassRepository codeClassRepository, CodeMethodRepository codeMethodRepository,
                              CodeFieldRepository codeFieldRepository, CodeDependencyRepository codeDependencyRepository,
-                             ArchitectureGraphService architectureGraphService) {
+                             ArchitectureGraphService architectureGraphService, ImpactAnalysisService impactAnalysisService) {
         this.projectRepository = projectRepository;
         this.ingestionService = ingestionService;
         this.codeClassRepository = codeClassRepository;
@@ -57,6 +61,7 @@ public class ProjectController {
         this.codeFieldRepository = codeFieldRepository;
         this.codeDependencyRepository = codeDependencyRepository;
         this.architectureGraphService = architectureGraphService;
+        this.impactAnalysisService = impactAnalysisService;
     }
 
     @PostMapping
@@ -165,6 +170,22 @@ public class ProjectController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
         return codeDependencyRepository.findAllBySourceClass_Id(codeClass.getId()).stream()
                 .map(DependencyAnalysisResponse.DependencyEdge::from).toList();
+    }
+
+    @GetMapping("/{projectId}/analysis/impact/{classId}")
+    public ImpactAnalysisResponse impact(@PathVariable String projectId, @PathVariable Long classId) {
+        if (!projectRepository.existsById(projectId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found.");
+        }
+        if (!codeClassRepository.existsById(classId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found.");
+        }
+        return ImpactAnalysisResponse.from(impactAnalysisService.analyze(projectId, String.valueOf(classId)));
+    }
+
+    @GetMapping("/{projectId}/analysis/cycles")
+    public CycleAnalysisResponse cycles(@PathVariable String projectId) {
+        return CycleAnalysisResponse.from(impactAnalysisService.cycles(projectId));
     }
 
     @GetMapping("/{projectId}/analysis/classes/{classId}/dependents")
