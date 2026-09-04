@@ -9,6 +9,8 @@ import com.codeintel.parser.model.ParsedType;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
 import com.codeintel.project.ProjectStatus;
+
+import java.io.IOException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +41,7 @@ public class AstAnalysisService {
     }
 
     @Transactional
-    public AstAnalysisResult analyze(Project project, Path sourceRoot) throws Exception {
+    public AstAnalysisResult analyze(Project project, Path sourceRoot) throws IOException {
         project.setStatus(ProjectStatus.ANALYZING);
         projectRepository.save(project);
 
