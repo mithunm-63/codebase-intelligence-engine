@@ -208,7 +208,9 @@ function App() {
         ingestResponse = await fetch(`${API_BASE_URL}/api/projects/${project.id}/ingest/zip`, { method: 'POST', body: form })
       }
       const ingestion = await ingestResponse.json()
-      if (!ingestResponse.ok) throw new Error(ingestion.error || 'Repository analysis failed.')
+      if (!ingestResponse.ok) {
+        throw new Error(ingestion.error || `Repository analysis failed (HTTP ${ingestResponse.status}).`)
+      }
       setResult(ingestion)
       await loadGraph(ingestion.projectId, 'class')
     } catch (err) {

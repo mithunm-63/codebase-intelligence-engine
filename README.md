@@ -225,6 +225,13 @@ The public GitHub ingestion mode supports only public `https://github.com/owner/
 
 The ZIP extractor validates normalized paths and applies both compressed-upload and uncompressed-content limits. Repository code is never executed during ingestion.
 
+
+### GitHub API token (recommended for the hosted demo)
+
+Public repositories can be queried without authentication, but repeated testing from a hosted backend can exhaust GitHub's unauthenticated API allowance. Configure an optional `GITHUB_TOKEN` secret in Render. The token is server-side only and is never sent to the React frontend.
+
+The backend keeps the public-repository-only restriction.
+
 ## Testing
 
 Run backend tests with:

@@ -46,6 +46,8 @@ management:
       show-details: never
 
 app:
+  github:
+    token: ${GITHUB_TOKEN:}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
   demo:

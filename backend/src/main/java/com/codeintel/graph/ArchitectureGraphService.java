@@ -48,31 +48,24 @@ public class ArchitectureGraphService {
                 "name", projectRepository.findById(projectId).map(p -> p.getName()).orElse(projectId)
         );
 
-        List<Map<String, Object>> classNodes = classes.stream()
-                .map(codeClass -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("projectId", projectId);
-                    row.put("classId", String.valueOf(codeClass.getId()));
-                    row.put("name", codeClass.getName());
-                    row.put("qualifiedName", codeClass.getQualifiedName());
-                    row.put("kind", codeClass.getKind());
-                    row.put("packageName", packageName(codeClass.getQualifiedName()));
-                    return row;
-                })
-                .toList();
+        List<Map<String, Object>> classNodes = classes.stream().map(codeClass -> Map.of(
+                "projectId", projectId,
+                "classId", String.valueOf(codeClass.getId()),
+                "name", codeClass.getName(),
+                "qualifiedName", codeClass.getQualifiedName(),
+                "kind", codeClass.getKind(),
+                "packageName", packageName(codeClass.getQualifiedName())
+        )).toList();
 
         List<Map<String, Object>> packageNodes = classes.stream()
                 .map(c -> packageName(c.getQualifiedName()))
                 .distinct()
-                .map(packageName -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("projectId", projectId);
-                    row.put("packageId", packageId(projectId, packageName));
-                    row.put("name", packageName);
-                    row.put("qualifiedName", packageName);
-                    return row;
-                })
-                .toList();
+                .map(packageName -> Map.of(
+                        "projectId", projectId,
+                        "packageId", packageId(projectId, packageName),
+                        "name", packageName,
+                        "qualifiedName", packageName
+                )).toList();
 
         List<Map<String, Object>> classRelationships = dependencies.stream()
                 .map(dependency -> {

@@ -127,3 +127,7 @@ GET /api/projects/{projectId}/analysis/classes/{classId}/dependents
 ### Latest build fix
 
 If the previous Render build reported a missing version for `org.springframework.boot:spring-jdbc`, use this version of the project. The POM now uses `spring-boot-starter-jdbc`, so Maven receives the dependency version from the Spring Boot parent.
+
+## GitHub ingestion on Render
+
+Add `GITHUB_TOKEN` as a Render environment variable. This is recommended for the public demo because repeated repository analysis can exhaust GitHub's unauthenticated API rate allowance. Do not put the token in GitHub source control or the Vercel frontend.

@@ -37,3 +37,7 @@ Phase 6: graph-native traversal, circular dependency detection, dependency paths
 ## Deployment
 
 The application remains deployable through the same GitHub → Vercel/Render workflow. Phase 5 additionally requires the existing Render Neo4j environment variables to point to a reachable Neo4j instance.
+
+
+### GitHub ingestion reliability fix
+The public GitHub client supports an optional `GITHUB_TOKEN` for authenticated GitHub API requests, sends the current GitHub API version header, uses the repository `zipball_url` returned by GitHub metadata when available, and returns actionable messages for 403/rate-limit/404 failures. Public repository URLs also accept `www.github.com` and strip query strings/fragments.
