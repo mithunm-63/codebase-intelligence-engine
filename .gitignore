@@ -1,0 +1,35 @@
+# Java / Maven
+target/
+*.class
+*.jar
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local runtime data
+postgres_data/
+neo4j_data/
+neo4j_logs/
+redis_data/
+
+# OS/editor temp files
+*.swp
+*.tmp

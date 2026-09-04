@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: codebase-intelligence-backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/codeintel}
+    username: ${DB_USERNAME:codeintel}
+    password: ${DB_PASSWORD:codeintel}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:1}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USERNAME:neo4j}
+      password: ${NEO4J_PASSWORD:codeintelneo4j}
+
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      repositories:
+        enabled: false
+
+server:
+  port: ${PORT:${SERVER_PORT:8080}}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  demo:
+    mode: ${DEMO_MODE:false}
+    max-repository-size-mb: ${MAX_REPOSITORY_SIZE_MB:50}
+    max-java-files: ${MAX_JAVA_FILES:2000}
+    max-analysis-seconds: ${MAX_ANALYSIS_SECONDS:120}
