@@ -46,3 +46,7 @@ A Java file that cannot be parsed is recorded as a parse error instead of failin
 ## Why this matters
 
 The next phase can now operate on structured source symbols rather than raw text. Phase 4 will add symbol resolution and dependency extraction such as `PaymentService -> PaymentRepository` and method-call relationships.
+
+## Phase 3 build-fix note
+
+The deployable Phase 3 package includes the JavaParser `NodeWithModifiers` import correction, the missing `CodeImport` JPA entity/repository, and the missing `jakarta.persistence.Lob` import. These were added to keep the Docker/Maven build green on Render.

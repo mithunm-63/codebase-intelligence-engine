@@ -98,3 +98,7 @@ Then use the Repository ingestion form with a small public GitHub Java/Spring Bo
 ## Important
 
 Phase 2 supports only public GitHub repositories. Private repositories are intentionally not supported yet. Never put GitHub tokens, database passwords, Redis credentials, or Neo4j passwords into GitHub.
+
+
+### Phase 3 build fix
+Use the latest Phase 3 fixed ZIP if Render reports missing `NodeWithModifiers`, `CodeImport`, or `Lob` symbols.
