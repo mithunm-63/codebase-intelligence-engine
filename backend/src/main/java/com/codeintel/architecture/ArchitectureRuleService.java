@@ -30,14 +30,14 @@ public class ArchitectureRuleService {
     }
 
     public List<ArchitectureRule> listRules(String projectId) {
-        requireProject(projectId);
+        Project project = requireProjectEntity(projectId);
+        seedDefaults(project);
         return ruleRepository.findAllByProject_IdOrderBySourceLayerAscTargetLayerAsc(projectId);
     }
 
     public ArchitectureRule upsert(String projectId, String sourceLayer, String targetLayer,
                                     boolean allowed, String severity, String description) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
+        Project project = requireProjectEntity(projectId);
         String source = normalize(sourceLayer);
         String target = normalize(targetLayer);
         ArchitectureRule rule = ruleRepository.findAllByProject_IdOrderBySourceLayerAscTargetLayerAsc(projectId)
@@ -63,12 +63,12 @@ public class ArchitectureRuleService {
     }
 
     public ArchitectureReport analyze(String projectId) {
-        requireProject(projectId);
-        List<ArchitectureRule> rules = ruleRepository.findAllByProject_IdOrderBySourceLayerAscTargetLayerAsc(projectId);
+        requireProjectEntity(projectId);
+        List<ArchitectureRule> rules = listRules(projectId);
         List<CodeClass> classes = classRepository.findAllByProject_IdOrderByQualifiedName(projectId);
         List<CodeDependency> dependencies = dependencyRepository.findAllBySourceClass_Project_Id(projectId);
         if (rules.isEmpty()) {
-            return new ArchitectureReport(projectId, 0, 0, 0, 100, List.of());
+            return new ArchitectureReport(projectId, 0, dependencies.size(), 0, 100, List.of(), 0, classes.size());
         }
 
         List<Violation> violations = new ArrayList<>();
@@ -94,6 +94,27 @@ public class ArchitectureRuleService {
                 (int) high, classes.size());
     }
 
+    private void seedDefaults(Project project) {
+        if (ruleRepository.countByProject_Id(project.getId()) > 0) return;
+        createDefault(project, "API", "SERVICE", true, "HIGH", "API controllers may call application services.");
+        createDefault(project, "SERVICE", "REPOSITORY", true, "HIGH", "Services may access repositories for persistence.");
+        createDefault(project, "SERVICE", "SERVICE", true, "LOW", "Services may collaborate with other services.");
+        createDefault(project, "API", "REPOSITORY", false, "HIGH", "Controllers should not bypass the service layer.");
+        createDefault(project, "REPOSITORY", "SERVICE", false, "HIGH", "Repositories should not depend upward on services.");
+        createDefault(project, "REPOSITORY", "API", false, "HIGH", "Repositories should not depend on API/controllers.");
+    }
+
+    private void createDefault(Project project, String source, String target, boolean allowed, String severity, String description) {
+        ArchitectureRule rule = new ArchitectureRule();
+        rule.setProject(project);
+        rule.setSourceLayer(source);
+        rule.setTargetLayer(target);
+        rule.setAllowed(allowed);
+        rule.setSeverity(severity);
+        rule.setDescription(description);
+        ruleRepository.save(rule);
+    }
+
     private String layerOf(CodeClass codeClass) {
         String pkg = codeClass.getQualifiedName();
         int dot = pkg.lastIndexOf('.');
@@ -108,6 +129,11 @@ public class ArchitectureRuleService {
 
     private void requireProject(String id) {
         if (!projectRepository.existsById(id)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found.");
+    }
+
+    private Project requireProjectEntity(String id) {
+        return projectRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
     }
 
     private String normalize(String value) {
