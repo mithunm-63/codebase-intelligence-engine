@@ -9,7 +9,10 @@ import com.codeintel.analysis.CodeClassRepository;
 import com.codeintel.analysis.CodeFieldRepository;
 import com.codeintel.analysis.CodeMethodRepository;
 import com.codeintel.analysis.CodeDependencyRepository;
+import com.codeintel.graph.ArchitectureGraphService;
 import com.codeintel.api.dto.DependencyAnalysisResponse;
+import com.codeintel.api.dto.ArchitectureGraphResponse;
+import com.codeintel.api.dto.GraphSyncResponse;
 import com.codeintel.ingestion.RepositoryIngestionService;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
@@ -41,16 +44,19 @@ public class ProjectController {
     private final CodeMethodRepository codeMethodRepository;
     private final CodeFieldRepository codeFieldRepository;
     private final CodeDependencyRepository codeDependencyRepository;
+    private final ArchitectureGraphService architectureGraphService;
 
     public ProjectController(ProjectRepository projectRepository, RepositoryIngestionService ingestionService,
                              CodeClassRepository codeClassRepository, CodeMethodRepository codeMethodRepository,
-                             CodeFieldRepository codeFieldRepository, CodeDependencyRepository codeDependencyRepository) {
+                             CodeFieldRepository codeFieldRepository, CodeDependencyRepository codeDependencyRepository,
+                             ArchitectureGraphService architectureGraphService) {
         this.projectRepository = projectRepository;
         this.ingestionService = ingestionService;
         this.codeClassRepository = codeClassRepository;
         this.codeMethodRepository = codeMethodRepository;
         this.codeFieldRepository = codeFieldRepository;
         this.codeDependencyRepository = codeDependencyRepository;
+        this.architectureGraphService = architectureGraphService;
     }
 
     @PostMapping
@@ -170,6 +176,26 @@ public class ProjectController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
         return codeDependencyRepository.findAllByTargetClass_Id(codeClass.getId()).stream()
                 .map(DependencyAnalysisResponse.DependencyEdge::from).toList();
+    }
+
+    @PostMapping("/{projectId}/analysis/graph/sync")
+    public GraphSyncResponse syncGraph(@PathVariable String projectId) {
+        return GraphSyncResponse.from(architectureGraphService.syncProject(projectId));
+    }
+
+    @GetMapping("/{projectId}/analysis/graph")
+    public ArchitectureGraphResponse graph(
+            @PathVariable String projectId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "class") String view,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "300") int nodeLimit,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1200") int edgeLimit) {
+        ArchitectureGraphService.View graphView;
+        try {
+            graphView = ArchitectureGraphService.View.valueOf(view.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "view must be class or package.");
+        }
+        return ArchitectureGraphResponse.from(architectureGraphService.getGraph(projectId, graphView, nodeLimit, edgeLimit));
     }
 
     private int nz(Integer value) { return value == null ? 0 : value; }

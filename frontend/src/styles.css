@@ -62,3 +62,29 @@ input:focus { border-color: rgba(121,168,255,.55); }
 .dependency-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
 .dependency-columns h3 { margin-top: 18px; }
 @media (max-width: 820px) { .dependency-columns { grid-template-columns:1fr; } }
+
+.graph-card { margin-top: 20px; padding: 18px; border-radius: 16px; background: rgba(0,0,0,.12); border: 1px solid rgba(255,255,255,.06); }
+.graph-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+.graph-actions button, .graph-toolbar button { border:1px solid rgba(255,255,255,.08); border-radius:9px; padding:8px 10px; color:#9eb0c5; background:rgba(255,255,255,.035); }
+.graph-actions button.active { color:#eaf1fb; background:rgba(121,168,255,.12); border-color:rgba(121,168,255,.35); }
+.graph-actions button:disabled { opacity:.45; cursor:not-allowed; }
+.graph-shell { margin-top:12px; }
+.graph-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; color:#72869c; font-size:12px; }
+.graph-toolbar > div { display:flex; gap:6px; }
+.graph-viewport { min-height:460px; overflow:auto; border:1px solid rgba(255,255,255,.06); border-radius:14px; background:radial-gradient(circle at top left, rgba(121,168,255,.06), transparent 35%), rgba(0,0,0,.13); }
+.graph-viewport svg { display:block; min-width:760px; width:100%; min-height:460px; color:#7188a3; }
+.graph-edge line { stroke:currentColor; stroke-width:1.4; opacity:.35; }
+.graph-edge.highlighted line { stroke:#a9c7ff; stroke-width:2.8; opacity:.85; }
+.graph-node { cursor:pointer; outline:none; }
+.graph-node rect { fill:rgba(19,34,54,.94); stroke:rgba(255,255,255,.1); stroke-width:1; transition:.15s ease; }
+.graph-node:hover rect, .graph-node.selected rect { fill:rgba(38,61,91,.96); stroke:rgba(121,168,255,.62); stroke-width:1.6; }
+.graph-node.dimmed { opacity:.28; }
+.node-title { fill:#dce8f7; font-size:12px; font-weight:700; }
+.node-subtitle { fill:#7f93aa; font-size:10px; }
+.graph-empty { display:grid; place-items:center; min-height:360px; color:#72869c; border:1px dashed rgba(255,255,255,.08); border-radius:12px; }
+.selected-node { display:grid; gap:5px; margin-top:12px; padding:12px; border-radius:12px; border:1px solid rgba(121,168,255,.22); background:rgba(121,168,255,.055); }
+.selected-node div { display:flex; justify-content:space-between; gap:10px; }
+.selected-node span { color:#72869c; font-size:11px; }
+.selected-node code { color:#a9c7ff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.info { color:#b9cce3; background:rgba(121,168,255,.07); border:1px solid rgba(121,168,255,.16); }
+@media (max-width: 820px) { .section-title { align-items:flex-start; flex-direction:column; } .graph-actions { justify-content:flex-start; } }

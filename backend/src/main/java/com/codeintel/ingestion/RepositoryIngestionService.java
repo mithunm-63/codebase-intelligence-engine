@@ -16,6 +16,7 @@ import com.codeintel.api.dto.IngestionResponse;
 import com.codeintel.analysis.AstAnalysisService;
 import com.codeintel.analysis.CodeClassRepository;
 import com.codeintel.analysis.DependencyAnalysisService;
+import com.codeintel.graph.ArchitectureGraphService;
 import com.codeintel.dependency.DependencyAnalysisResult;
 import com.codeintel.parser.model.AstAnalysisResult;
 import com.codeintel.project.Project;
@@ -34,19 +35,22 @@ public class RepositoryIngestionService {
     private final AstAnalysisService astAnalysisService;
     private final DependencyAnalysisService dependencyAnalysisService;
     private final CodeClassRepository codeClassRepository;
+    private final ArchitectureGraphService architectureGraphService;
 
     public RepositoryIngestionService(ProjectRepository projectRepository,
                                       GitHubRepositoryClient gitHubRepositoryClient,
                                       RepositoryLimits limits,
                                       AstAnalysisService astAnalysisService,
                                       DependencyAnalysisService dependencyAnalysisService,
-                                      CodeClassRepository codeClassRepository) {
+                                      CodeClassRepository codeClassRepository,
+                                      ArchitectureGraphService architectureGraphService) {
         this.projectRepository = projectRepository;
         this.gitHubRepositoryClient = gitHubRepositoryClient;
         this.limits = limits;
         this.astAnalysisService = astAnalysisService;
         this.dependencyAnalysisService = dependencyAnalysisService;
         this.codeClassRepository = codeClassRepository;
+        this.architectureGraphService = architectureGraphService;
     }
 
     public IngestionResponse ingestZip(String projectId, MultipartFile file) {
@@ -117,6 +121,7 @@ public class RepositoryIngestionService {
 
         AstAnalysisResult ast = astAnalysisService.analyze(project, target);
         DependencyAnalysisResult dependencies = dependencyAnalysisService.analyze(project, target);
+        architectureGraphService.syncProject(project.getId());
         project.setStatus(ProjectStatus.READY);
         projectRepository.save(project);
         var indexedClasses = codeClassRepository.findAllByProject_IdOrderByQualifiedName(project.getId()).stream()

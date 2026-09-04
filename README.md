@@ -4,9 +4,9 @@ A deployable static-analysis platform for Java/Spring Boot repositories. Think o
 
 The core intelligence will come from our own Java analysis engine. An LLM will be added later as a grounded explanation/query layer rather than the source of truth.
 
-## Current milestone — Phase 4
+## Current milestone — Phase 5
 
-Phase 4 adds **project-aware symbol resolution and class-to-class dependency analysis** on top of the repository ingestion and AST foundation.
+Phase 5 adds **Neo4j architecture graph projection and graph visualization** on top of the repository ingestion, AST, and dependency foundation.
 
 Supported inputs:
 
@@ -45,10 +45,12 @@ Dependency Resolution
      ↓
 PostgreSQL Dependency Model
      ↓
-Next: Neo4j Architecture Graph
+Neo4j Architecture Graph
+     ↓
+Graph API + Visualization
 ```
 
-Phase 4 resolves project types instead of treating every name as a dependency. It records relationship types such as `FIELD_TYPE`, `METHOD_PARAMETER`, `METHOD_RETURN_TYPE`, `EXTENDS`, `IMPLEMENTS`, `ANNOTATION`, `METHOD_CALL`, and `OBJECT_CREATION`.
+Phase 4 resolves project types instead of treating every name as a dependency. Phase 5 projects those resolved edges into Neo4j so graph-native traversal can drive architecture intelligence. It records relationship types such as `FIELD_TYPE`, `METHOD_PARAMETER`, `METHOD_RETURN_TYPE`, `EXTENDS`, `IMPLEMENTS`, `ANNOTATION`, `METHOD_CALL`, and `OBJECT_CREATION`.
 
 ## Repository layout
 
@@ -234,22 +236,22 @@ mvn test
 
 The suite includes repository-ingestion safety tests plus a Phase 4 dependency-analysis test covering field dependencies, inheritance, parameter resolution, and method calls.
 
-## Phase 4 — Symbol Resolution + Dependency Analysis
+## Phase 5 — Neo4j Architecture Graph
 
-Repositories now move through: AST → symbol index → dependency resolution. The UI displays resolved dependency counts, direct dependencies, and incoming dependents for each class.
+Repositories now move through: AST → symbol index → dependency resolution → Neo4j projection. The UI includes a class/package architecture graph and a manual Neo4j synchronization action.
 
-See `docs/PHASE_4.md` for details.
+See `docs/PHASE_5.md` for details.
 
 ## Next milestone
 
-**Phase 5 — Neo4j Architecture Graph + Graph Traversals**
+**Phase 6 — Graph Traversals + Impact Analysis**
 
 ```text
-PostgreSQL dependency edges
-           ↓
-        Neo4j graph
-           ↓
-Graph traversals / cycles / paths
-           ↓
-Architecture intelligence
+Neo4j graph
+    ↓
+Reachability / paths / cycles
+    ↓
+Blast radius
+    ↓
+Change-impact intelligence
 ```

@@ -17,6 +17,7 @@ import com.codeintel.project.ProjectStatus;
 import com.codeintel.analysis.AstAnalysisService;
 import com.codeintel.analysis.CodeClassRepository;
 import com.codeintel.analysis.DependencyAnalysisService;
+import com.codeintel.graph.ArchitectureGraphService;
 import com.codeintel.dependency.DependencyAnalysisResult;
 import com.codeintel.parser.model.AstAnalysisResult;
 import org.assertj.core.api.Assertions;
@@ -82,13 +83,14 @@ class RepositoryIngestionServiceTest {
             throw new RuntimeException(e);
         }
         DependencyAnalysisService dependencyService = mock(DependencyAnalysisService.class);
+        ArchitectureGraphService graphService = mock(ArchitectureGraphService.class);
         try {
             when(dependencyService.analyze(any(Project.class), any())).thenReturn(
                     new DependencyAnalysisResult(0, 0, 0, java.util.Map.of(), java.util.List.of(), java.util.List.of()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new RepositoryIngestionService(repository, mock(GitHubRepositoryClient.class), limits, astService, dependencyService, mock(CodeClassRepository.class));
+        return new RepositoryIngestionService(repository, mock(GitHubRepositoryClient.class), limits, astService, dependencyService, mock(CodeClassRepository.class), graphService);
     }
 
     private static byte[] zipWithEntry(String name, String contents) throws Exception {
