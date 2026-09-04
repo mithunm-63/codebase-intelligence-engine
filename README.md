@@ -269,3 +269,7 @@ Change-impact intelligence
 
 ### Neo4j availability behavior
 Repository AST and dependency analysis can complete even when Neo4j is temporarily unavailable. In that case the project is still marked `READY`, the response reports `graphStatus=UNAVAILABLE`, and the UI shows the Neo4j configuration error. Once Neo4j is reachable, use **Sync Neo4j** to rebuild the graph.
+
+
+### Phase 5.1 Neo4j sync fix
+Automatic graph synchronization now correctly associates each class with its package using row-scoped `packageId` values.

@@ -56,7 +56,9 @@ public class ArchitectureGraphService {
                     row.put("name", codeClass.getName());
                     row.put("qualifiedName", codeClass.getQualifiedName());
                     row.put("kind", codeClass.getKind());
-                    row.put("packageName", packageName(codeClass.getQualifiedName()));
+                    String packageName = packageName(codeClass.getQualifiedName());
+                    row.put("packageName", packageName);
+                    row.put("packageId", packageId(projectId, packageName));
                     return row;
                 })
                 .toList();
@@ -144,10 +146,11 @@ public class ArchitectureGraphService {
                     """, Values.parameters("projectId", projectId)).consume();
 
             session.run("""
-                    MATCH (c:CodeClass {projectId: $projectId})
-                    MATCH (p:Package {projectId: $projectId, packageId: $packageId})
+                    UNWIND $classes AS row
+                    MATCH (c:CodeClass {projectId: $projectId, classId: row.classId})
+                    MATCH (p:Package {projectId: $projectId, packageId: row.packageId})
                     MERGE (p)-[:CONTAINS]->(c)
-                    """, Values.parameters("projectId", projectId)).consume();
+                    """, Values.parameters("projectId", projectId, "classes", classNodes)).consume();
 
             session.run("""
                     UNWIND $relationships AS row

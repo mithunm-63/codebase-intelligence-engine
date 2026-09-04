@@ -48,3 +48,8 @@ The public GitHub client supports an optional `GITHUB_TOKEN` for authenticated G
 
 ### Neo4j availability behavior
 Repository AST and dependency analysis can complete even when Neo4j is temporarily unavailable. In that case the project is still marked `READY`, the response reports `graphStatus=UNAVAILABLE`, and the UI shows the Neo4j configuration error. Once Neo4j is reachable, use **Sync Neo4j** to rebuild the graph.
+
+
+### Neo4j sync regression fix
+- Fixed package-to-class containment sync to `UNWIND` each class row and use its explicit `packageId` parameter.
+- Prevents Neo4j `Expected $packageId, but got $projectId` errors during automatic graph synchronization.
