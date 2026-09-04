@@ -137,6 +137,10 @@ function App() {
   const [cyclesLoading, setCyclesLoading] = useState(false)
   const [risks, setRisks] = useState(null)
   const [risksLoading, setRisksLoading] = useState(false)
+  const [architecture, setArchitecture] = useState(null)
+  const [architectureLoading, setArchitectureLoading] = useState(false)
+  const [ruleForm, setRuleForm] = useState({ sourceLayer: 'API', targetLayer: 'REPOSITORY', allowed: false, severity: 'HIGH', description: '' })
+  const [ruleSaving, setRuleSaving] = useState(false)
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/health`)
@@ -198,6 +202,55 @@ function App() {
     }
   }
 
+  const loadArchitecture = async (projectId) => {
+    if (!projectId) return
+    setArchitectureLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/architecture-rules`)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not load architecture rules.')
+      setArchitecture(data)
+    } catch (err) {
+      setArchitecture(null)
+      setGraphMessage(err.message || 'Could not load architecture rules.')
+    } finally {
+      setArchitectureLoading(false)
+    }
+  }
+
+  const saveRule = async (event) => {
+    event.preventDefault()
+    if (!result?.projectId) return
+    setRuleSaving(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${result.projectId}/architecture-rules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ruleForm),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not save architecture rule.')
+      setArchitecture(data)
+      setRuleForm((current) => ({ ...current, description: '' }))
+    } catch (err) {
+      setGraphMessage(err.message || 'Could not save architecture rule.')
+    } finally {
+      setRuleSaving(false)
+    }
+  }
+
+  const deleteRule = async (ruleId) => {
+    if (!result?.projectId || !ruleId) return
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${result.projectId}/architecture-rules/${ruleId}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not delete architecture rule.')
+      setArchitecture(data)
+    } catch (err) {
+      setGraphMessage(err.message || 'Could not delete architecture rule.')
+    }
+  }
+
   const analyzeImpact = async (classId, className = '') => {
     if (!result?.projectId || !classId) return
     setImpactLoading(true)
@@ -228,6 +281,7 @@ function App() {
       await loadGraph(result.projectId, graphView)
       await loadCycles(result.projectId)
       await loadRisks(result.projectId)
+      await loadArchitecture(result.projectId)
     } catch (err) {
       setGraphMessage(err.message || 'Could not synchronize the graph.')
       setGraphLoading(false)
@@ -240,6 +294,7 @@ function App() {
     setResult(null)
     setDetail(null)
     setGraph(null)
+    setArchitecture(null)
     setGraphMessage('')
     if (!projectName.trim()) return setError('Enter a project name.')
     if (mode === 'github' && !repositoryUrl.trim()) return setError('Enter a public GitHub repository URL.')
@@ -277,6 +332,7 @@ function App() {
       await loadGraph(ingestion.projectId, 'class')
       await loadCycles(ingestion.projectId)
       await loadRisks(ingestion.projectId)
+      await loadArchitecture(ingestion.projectId)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
@@ -341,10 +397,7 @@ function App() {
               <div className="result-card">
                 <div className="result-title"><strong>Repository analysis complete</strong><span>{result.projectId}</span></div>
                 {result.graphStatus === 'UNAVAILABLE' && (
-                  <div className="message warning">
-                    Source and dependency analysis completed, but Neo4j is currently unavailable. Configure NEO4J_URI, NEO4J_USERNAME and NEO4J_PASSWORD on Render, then use “Sync Neo4j”.
-                    {result.graphError ? ` (${result.graphError})` : ''}
-                  </div>
+                  <div className="message warning">Source and dependency analysis completed, but Neo4j is currently unavailable. Configure NEO4J_URI, NEO4J_USERNAME and NEO4J_PASSWORD on Render, then use “Sync Neo4j”.{result.graphError ? ` (${result.graphError})` : ''}</div>
                 )}
                 <div className="metrics">
                   <Stat value={result.classCount + result.interfaceCount + result.enumCount + result.recordCount + result.annotationCount} label="Types" />
@@ -441,6 +494,70 @@ function App() {
                 )}
               </div>
 
+              <div className="analysis-card architecture-dashboard">
+                <div className="section-title">
+                  <div><strong>Architecture rules & drift</strong><span>Compare intended layer boundaries with the actual dependency graph.</span></div>
+                  <span className={`risk-badge ${(architecture?.complianceScore ?? 100) < 70 ? 'high' : (architecture?.complianceScore ?? 100) < 90 ? 'medium' : 'low'}`}>
+                    {architectureLoading ? 'Checking…' : `${architecture?.complianceScore ?? 100}% compliant`}
+                  </span>
+                </div>
+                {!architecture && !architectureLoading && <p className="muted">Architecture rules are not available yet.</p>}
+                {architecture && (
+                  <>
+                    <div className="metrics secondary">
+                      <Stat value={architecture.ruleCount} label="Rules" />
+                      <Stat value={architecture.dependencyCount} label="Dependencies checked" />
+                      <Stat value={architecture.violationCount} label="Violations" />
+                      <Stat value={architecture.highSeverityViolations} label="High severity" />
+                    </div>
+
+                    <div className="rule-editor">
+                      <div className="subheading"><strong>Add / update a rule</strong><span>Use package-derived layers: API, SERVICE, REPOSITORY, CONFIG, MODEL, OTHER.</span></div>
+                      <form className="rule-form" onSubmit={saveRule}>
+                        <label>From<select value={ruleForm.sourceLayer} onChange={(e) => setRuleForm({ ...ruleForm, sourceLayer: e.target.value })}>
+                          {['API','SERVICE','REPOSITORY','CONFIG','MODEL','OTHER'].map((layer) => <option key={layer}>{layer}</option>)}
+                        </select></label>
+                        <label>To<select value={ruleForm.targetLayer} onChange={(e) => setRuleForm({ ...ruleForm, targetLayer: e.target.value })}>
+                          {['API','SERVICE','REPOSITORY','CONFIG','MODEL','OTHER'].map((layer) => <option key={layer}>{layer}</option>)}
+                        </select></label>
+                        <label>Behavior<select value={String(ruleForm.allowed)} onChange={(e) => setRuleForm({ ...ruleForm, allowed: e.target.value === 'true' })}>
+                          <option value="true">Allowed</option><option value="false">Forbidden</option>
+                        </select></label>
+                        <label>Severity<select value={ruleForm.severity} onChange={(e) => setRuleForm({ ...ruleForm, severity: e.target.value })}>
+                          <option>LOW</option><option>MEDIUM</option><option>HIGH</option>
+                        </select></label>
+                        <label className="rule-description">Description<input value={ruleForm.description} onChange={(e) => setRuleForm({ ...ruleForm, description: e.target.value })} placeholder="Controllers should not bypass services." /></label>
+                        <button className="impact-button" type="submit" disabled={ruleSaving}>{ruleSaving ? 'Saving…' : 'Save rule'}</button>
+                      </form>
+                    </div>
+
+                    <div className="rule-list">
+                      {architecture.rules.map((rule) => (
+                        <div className="rule-row" key={rule.id}>
+                          <div className="rule-direction"><strong>{rule.sourceLayer}</strong><span>→</span><strong>{rule.targetLayer}</strong></div>
+                          <span className={`risk-badge ${rule.allowed ? 'low' : rule.severity.toLowerCase()}`}>{rule.allowed ? 'ALLOWED' : 'FORBIDDEN'}</span>
+                          <span className="rule-description-text">{rule.description}</span>
+                          <button type="button" className="danger-button" onClick={() => deleteRule(rule.id)}>Delete</button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="violation-list">
+                      <div className="subheading"><strong>Detected violations</strong><span>{architecture.violationCount} dependency edge(s) violate the current rules.</span></div>
+                      {architecture.violations.length === 0 && <div className="empty-analysis">No architecture drift detected for the current rules.</div>}
+                      {architecture.violations.map((violation) => (
+                        <div className="violation-row" key={`${violation.dependencyId}-${violation.sourceLine}`}>
+                          <div><span className={`risk-badge ${violation.severity.toLowerCase()}`}>{violation.severity}</span><strong>{violation.sourceLayer} → {violation.targetLayer}</strong></div>
+                          <code>{shortLabel(violation.sourceClass, 42)} → {shortLabel(violation.targetClass, 42)}</code>
+                          <span>{violation.relationshipType} · line {violation.sourceLine}</span>
+                          <small>{violation.ruleDescription}</small>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
               <div className="class-browser">
                 <div className="section-title"><strong>Type index</strong><span>Click a type to inspect its fields, methods, and relationships.</span></div>
                 <div className="class-list">
@@ -503,16 +620,12 @@ function App() {
                 <div>
                   <h3>Depends on</h3>
                   {(detail.dependencies || []).length === 0 && <p className="muted">No project dependency resolved.</p>}
-                  {(detail.dependencies || []).map((dependency) => (
-                    <div className="item" key={dependency.id}><code>{dependency.className}</code><span>{dependency.type} · line {dependency.sourceLine} · ×{dependency.occurrenceCount}</span></div>
-                  ))}
+                  {(detail.dependencies || []).map((dependency) => <div className="item" key={dependency.id}><code>{dependency.className}</code><span>{dependency.type} · line {dependency.sourceLine} · ×{dependency.occurrenceCount}</span></div>)}
                 </div>
                 <div>
                   <h3>Used by</h3>
                   {(detail.dependents || []).length === 0 && <p className="muted">No project class depends on this type.</p>}
-                  {(detail.dependents || []).map((dependency) => (
-                    <div className="item" key={dependency.id}><code>{dependency.className}</code><span>{dependency.type} · line {dependency.sourceLine} · ×{dependency.occurrenceCount}</span></div>
-                  ))}
+                  {(detail.dependents || []).map((dependency) => <div className="item" key={dependency.id}><code>{dependency.className}</code><span>{dependency.type} · line {dependency.sourceLine} · ×{dependency.occurrenceCount}</span></div>)}
                 </div>
               </div>
             </div>
