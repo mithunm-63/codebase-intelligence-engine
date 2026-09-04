@@ -77,6 +77,19 @@ public class Project {
     @Column(name = "import_count")
     private Integer importCount;
 
+    @Column(name = "dependency_count")
+    private Integer dependencyCount;
+
+    @Column(name = "dependency_occurrence_count")
+    private Integer dependencyOccurrenceCount;
+
+    @Column(name = "unresolved_reference_count")
+    private Integer unresolvedReferenceCount;
+
+    @Lob
+    @Column(name = "unresolved_references")
+    private String unresolvedReferences;
+
     @Column(name = "parse_error_count")
     private Integer parseErrorCount;
 
@@ -126,6 +139,10 @@ public class Project {
     public Integer getConstructorCount() { return constructorCount; }
     public Integer getFieldCount() { return fieldCount; }
     public Integer getImportCount() { return importCount; }
+    public Integer getDependencyCount() { return dependencyCount; }
+    public Integer getDependencyOccurrenceCount() { return dependencyOccurrenceCount; }
+    public Integer getUnresolvedReferenceCount() { return unresolvedReferenceCount; }
+    public String getUnresolvedReferences() { return unresolvedReferences; }
     public Integer getParseErrorCount() { return parseErrorCount; }
     public String getParseErrors() { return parseErrors; }
     public Instant getAstAnalyzedAt() { return astAnalyzedAt; }
@@ -151,6 +168,10 @@ public class Project {
     public void setConstructorCount(Integer v) { constructorCount = v; }
     public void setFieldCount(Integer v) { fieldCount = v; }
     public void setImportCount(Integer v) { importCount = v; }
+    public void setDependencyCount(Integer v) { dependencyCount = v; }
+    public void setDependencyOccurrenceCount(Integer v) { dependencyOccurrenceCount = v; }
+    public void setUnresolvedReferenceCount(Integer v) { unresolvedReferenceCount = v; }
+    public void setUnresolvedReferences(String v) { unresolvedReferences = v; }
     public void setParseErrorCount(Integer v) { parseErrorCount = v; }
     public void setParseErrors(String v) { parseErrors = v; }
     public void setAstAnalyzedAt(Instant v) { astAnalyzedAt = v; }

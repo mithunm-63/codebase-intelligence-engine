@@ -117,7 +117,7 @@ function App() {
           {result && (
             <>
               <div className="result-card">
-                <div className="result-title"><strong>AST analysis complete</strong><span>{result.projectId}</span></div>
+                <div className="result-title"><strong>Repository analysis complete</strong><span>{result.projectId}</span></div>
                 <div className="metrics">
                   <Stat value={result.classCount + result.interfaceCount + result.enumCount + result.recordCount + result.annotationCount} label="Types" />
                   <Stat value={result.methodCount} label="Methods" />
@@ -129,6 +129,12 @@ function App() {
                   <Stat value={result.interfaceCount} label="Interfaces" />
                   <Stat value={result.enumCount} label="Enums" />
                   <Stat value={result.recordCount} label="Records" />
+                </div>
+                <div className="metrics secondary">
+                  <Stat value={result.dependencyCount} label="Resolved edges" />
+                  <Stat value={result.dependencyOccurrenceCount} label="Dependency occurrences" />
+                  <Stat value={result.unresolvedReferenceCount} label="Ambiguous refs" />
+                  <Stat value={result.status} label="Status" />
                 </div>
                 {result.parseErrorCount > 0 && <div className="message warning">{result.parseErrorCount} Java file(s) could not be parsed. The valid source was still indexed.</div>}
                 <div className="sample-list">
@@ -163,6 +169,28 @@ function App() {
               {detail.fields.map((field) => <div className="item" key={field.id}><code>{field.type} {field.name}</code><span>{field.modifiers}</span></div>)}
               <h3>Methods</h3>
               {detail.methods.map((method) => <div className="item" key={method.id}><code>{method.signature}</code><span>{method.kind} · {method.lineCount} lines</span></div>)}
+              <div className="dependency-columns">
+                <div>
+                  <h3>Depends on</h3>
+                  {(detail.dependencies || []).length === 0 && <p className="muted">No project dependency resolved.</p>}
+                  {(detail.dependencies || []).map((dependency) => (
+                    <div className="item" key={dependency.id}>
+                      <code>{dependency.className}</code>
+                      <span>{dependency.type} · line {dependency.sourceLine} · ×{dependency.occurrenceCount}</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <h3>Used by</h3>
+                  {(detail.dependents || []).length === 0 && <p className="muted">No project class depends on this type.</p>}
+                  {(detail.dependents || []).map((dependency) => (
+                    <div className="item" key={dependency.id}>
+                      <code>{dependency.className}</code>
+                      <span>{dependency.type} · line {dependency.sourceLine} · ×{dependency.occurrenceCount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </section>

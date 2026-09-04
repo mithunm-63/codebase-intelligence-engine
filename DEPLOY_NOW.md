@@ -1,4 +1,4 @@
-# Deploy Now — Phase 2
+# Deploy Now — Phase 4
 
 Phase 2 uses the same cloud deployment shape as Phase 1, but the frontend can now ingest public GitHub repositories and ZIPs.
 
@@ -102,3 +102,23 @@ Phase 2 supports only public GitHub repositories. Private repositories are inten
 
 ### Phase 3 build fix
 Use the latest Phase 3 fixed ZIP if Render reports missing `NodeWithModifiers`, `CodeImport`, or `Lob` symbols.
+
+## 6. Test Phase 4 dependency analysis
+
+After the deployment is healthy, analyze a small Java repository. The included sample repository is under `samples/dependency-demo`. You can zip that folder and use the ZIP upload, or publish it as a public GitHub repository.
+
+After analysis, verify: 
+
+```text
+Project status: READY
+Resolved dependency edges: > 0
+Dependency occurrences: > 0
+```
+
+For a class detail, verify the UI shows `Depends on` and `Used by`. The API endpoints are:
+
+```text
+GET /api/projects/{projectId}/analysis/dependencies
+GET /api/projects/{projectId}/analysis/classes/{classId}/dependencies
+GET /api/projects/{projectId}/analysis/classes/{classId}/dependents
+```

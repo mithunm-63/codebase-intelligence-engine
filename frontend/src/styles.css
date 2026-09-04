@@ -58,3 +58,7 @@ input:focus { border-color: rgba(121,168,255,.55); }
 .item code { color:#cfe0f3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .item span { color:#72869c; font-size:11px; white-space:nowrap; }
 @media (max-width: 720px) { .class-list, .detail-grid { grid-template-columns:1fr; } .item { flex-direction:column; } }
+
+.dependency-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.dependency-columns h3 { margin-top: 18px; }
+@media (max-width: 820px) { .dependency-columns { grid-template-columns:1fr; } }

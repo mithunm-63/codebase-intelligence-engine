@@ -26,6 +26,10 @@ public record ProjectResponse(
         Integer constructorCount,
         Integer fieldCount,
         Integer importCount,
+        Integer dependencyCount,
+        Integer dependencyOccurrenceCount,
+        Integer unresolvedReferenceCount,
+        String unresolvedReferences,
         Integer parseErrorCount,
         String parseErrors,
         Instant astAnalyzedAt,
@@ -39,7 +43,9 @@ public record ProjectResponse(
                 p.getRepositorySizeBytes(), p.getTotalFiles(), p.getJavaFiles(),
                 p.getMainJavaFiles(), p.getTestJavaFiles(), p.getClassCount(), p.getInterfaceCount(),
                 p.getEnumCount(), p.getRecordCount(), p.getAnnotationCount(), p.getMethodCount(),
-                p.getConstructorCount(), p.getFieldCount(), p.getImportCount(), p.getParseErrorCount(), p.getParseErrors(), p.getAstAnalyzedAt(),
+                p.getConstructorCount(), p.getFieldCount(), p.getImportCount(), p.getDependencyCount(),
+                p.getDependencyOccurrenceCount(), p.getUnresolvedReferenceCount(), p.getUnresolvedReferences(),
+                p.getParseErrorCount(), p.getParseErrors(), p.getAstAnalyzedAt(),
                 p.getCreatedAt(), p.getUpdatedAt(), p.getErrorMessage()
         );
     }

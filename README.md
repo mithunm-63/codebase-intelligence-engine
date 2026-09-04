@@ -4,9 +4,9 @@ A deployable static-analysis platform for Java/Spring Boot repositories. Think o
 
 The core intelligence will come from our own Java analysis engine. An LLM will be added later as a grounded explanation/query layer rather than the source of truth.
 
-## Current milestone — Phase 2
+## Current milestone — Phase 4
 
-Phase 2 adds **real repository ingestion and bounded source discovery** on top of the Phase 1 deployment foundation.
+Phase 4 adds **project-aware symbol resolution and class-to-class dependency analysis** on top of the repository ingestion and AST foundation.
 
 Supported inputs:
 
@@ -37,12 +37,18 @@ Safety + Size Limits
      ↓
 Temporary Workspace
      ↓
-File Discovery
+JavaParser AST
      ↓
-Project Metadata (PostgreSQL)
+Symbol Index
      ↓
-Next: JavaParser AST + Symbols
+Dependency Resolution
+     ↓
+PostgreSQL Dependency Model
+     ↓
+Next: Neo4j Architecture Graph
 ```
+
+Phase 4 resolves project types instead of treating every name as a dependency. It records relationship types such as `FIELD_TYPE`, `METHOD_PARAMETER`, `METHOD_RETURN_TYPE`, `EXTENDS`, `IMPLEMENTS`, `ANNOTATION`, `METHOD_CALL`, and `OBJECT_CREATION`.
 
 ## Repository layout
 
@@ -51,7 +57,10 @@ codebase-intelligence-engine/
 ├── backend/
 │   ├── src/main/java/com/codeintel/
 │   │   ├── api/
+│   │   ├── analysis/
+│   │   ├── dependency/
 │   │   ├── ingestion/
+│   │   ├── parser/
 │   │   └── project/
 │   ├── src/test/
 │   ├── src/main/resources/application.yml
@@ -65,6 +74,8 @@ codebase-intelligence-engine/
 ├── docs/
 ├── docker-compose.yml
 ├── render.yaml
+├── samples/
+│   └── dependency-demo/
 └── README.md
 ```
 
@@ -123,6 +134,16 @@ Multipart field:
 file
 ```
 
+Dependency analysis:
+
+```http
+GET /api/projects/{projectId}/analysis/dependencies
+GET /api/projects/{projectId}/analysis/classes/{classId}/dependencies
+GET /api/projects/{projectId}/analysis/classes/{classId}/dependents
+```
+
+The class-detail endpoint also returns direct `dependencies` and incoming `dependents`.
+
 ## Local development
 
 Prerequisites:
@@ -174,7 +195,7 @@ GitHub
                 └── Upstash → Redis
 ```
 
-Phase 2 still keeps the complete platform dependencies configurable, even though ingestion itself only persists project metadata in PostgreSQL and uses temporary filesystem storage.
+The public demo keeps the complete platform dependencies configurable. Phase 4 persists the resolved dependency model in PostgreSQL; Neo4j remains ready for the Phase 5 graph projection.
 
 The public demo is intentionally bounded:
 
@@ -211,34 +232,24 @@ cd backend
 mvn test
 ```
 
-The Phase 2 suite includes archive safety and source-root/file-count tests.
+The suite includes repository-ingestion safety tests plus a Phase 4 dependency-analysis test covering field dependencies, inheritance, parameter resolution, and method calls.
+
+## Phase 4 — Symbol Resolution + Dependency Analysis
+
+Repositories now move through: AST → symbol index → dependency resolution. The UI displays resolved dependency counts, direct dependencies, and incoming dependents for each class.
+
+See `docs/PHASE_4.md` for details.
 
 ## Next milestone
 
-**Phase 3 — JavaParser AST + symbol extraction**
+**Phase 5 — Neo4j Architecture Graph + Graph Traversals**
 
 ```text
-Java file
-   ↓
-JavaParser
-   ↓
-AST
-   ↓
-Classes
-Methods
-Fields
-Annotations
-Imports
-Types
+PostgreSQL dependency edges
+           ↓
+        Neo4j graph
+           ↓
+Graph traversals / cycles / paths
+           ↓
+Architecture intelligence
 ```
-
-## Phase 3 — Java AST & Symbol Extraction
-
-Repositories are now parsed with JavaParser and indexed into PostgreSQL as classes, interfaces, enums, records, methods, constructors, and fields. The current public deployment remains intentionally limited to small repositories.
-
-See `docs/PHASE_3.md` for details.
-
-
-### Phase 3 parser
-
-The backend now uses JavaParser 3.28.0 to parse Java 21 source and persist structural symbols for later dependency analysis. JavaParser 3.28.0 is published on Maven Central.

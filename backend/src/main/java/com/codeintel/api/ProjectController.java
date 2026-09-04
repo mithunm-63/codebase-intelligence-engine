@@ -8,6 +8,8 @@ import com.codeintel.api.dto.CodeClassDetailResponse;
 import com.codeintel.analysis.CodeClassRepository;
 import com.codeintel.analysis.CodeFieldRepository;
 import com.codeintel.analysis.CodeMethodRepository;
+import com.codeintel.analysis.CodeDependencyRepository;
+import com.codeintel.api.dto.DependencyAnalysisResponse;
 import com.codeintel.ingestion.RepositoryIngestionService;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -37,15 +40,17 @@ public class ProjectController {
     private final CodeClassRepository codeClassRepository;
     private final CodeMethodRepository codeMethodRepository;
     private final CodeFieldRepository codeFieldRepository;
+    private final CodeDependencyRepository codeDependencyRepository;
 
     public ProjectController(ProjectRepository projectRepository, RepositoryIngestionService ingestionService,
                              CodeClassRepository codeClassRepository, CodeMethodRepository codeMethodRepository,
-                             CodeFieldRepository codeFieldRepository) {
+                             CodeFieldRepository codeFieldRepository, CodeDependencyRepository codeDependencyRepository) {
         this.projectRepository = projectRepository;
         this.ingestionService = ingestionService;
         this.codeClassRepository = codeClassRepository;
         this.codeMethodRepository = codeMethodRepository;
         this.codeFieldRepository = codeFieldRepository;
+        this.codeDependencyRepository = codeDependencyRepository;
     }
 
     @PostMapping
@@ -120,7 +125,51 @@ public class ProjectController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
         return CodeClassDetailResponse.from(codeClass,
                 codeFieldRepository.findAllByCodeClass_IdOrderByLine(classId),
-                codeMethodRepository.findAllByCodeClass_IdOrderByStartLine(classId));
+                codeMethodRepository.findAllByCodeClass_IdOrderByStartLine(classId),
+                codeDependencyRepository.findAllBySourceClass_Id(classId),
+                codeDependencyRepository.findAllByTargetClass_Id(classId));
+    }
+
+
+    @GetMapping("/{projectId}/analysis/dependencies")
+    public DependencyAnalysisResponse dependencies(@PathVariable String projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found."));
+        var edges = codeDependencyRepository.findAllBySourceClass_Project_Id(projectId);
+        Map<String, Integer> relationshipTypes = edges.stream()
+                .collect(java.util.stream.Collectors.groupingBy(d -> d.getType().name(),
+                        java.util.LinkedHashMap::new, java.util.stream.Collectors.summingInt(ignored -> 1)));
+        return new DependencyAnalysisResponse(
+                project.getId(),
+                nz(project.getDependencyCount()),
+                nz(project.getDependencyOccurrenceCount()),
+                nz(project.getUnresolvedReferenceCount()),
+                relationshipTypes,
+                edges.stream().limit(500).map(DependencyAnalysisResponse.DependencyEdge::from).toList(),
+                project.getUnresolvedReferences() == null || project.getUnresolvedReferences().isBlank()
+                        ? java.util.List.of() : project.getUnresolvedReferences().lines().toList());
+    }
+
+    @GetMapping("/{projectId}/analysis/classes/{classId}/dependencies")
+    public List<DependencyAnalysisResponse.DependencyEdge> classDependencies(@PathVariable String projectId, @PathVariable Long classId) {
+        if (!projectRepository.existsById(projectId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found.");
+        }
+        var codeClass = codeClassRepository.findByIdAndProject_Id(classId, projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
+        return codeDependencyRepository.findAllBySourceClass_Id(codeClass.getId()).stream()
+                .map(DependencyAnalysisResponse.DependencyEdge::from).toList();
+    }
+
+    @GetMapping("/{projectId}/analysis/classes/{classId}/dependents")
+    public List<DependencyAnalysisResponse.DependencyEdge> classDependents(@PathVariable String projectId, @PathVariable Long classId) {
+        if (!projectRepository.existsById(projectId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found.");
+        }
+        var codeClass = codeClassRepository.findByIdAndProject_Id(classId, projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
+        return codeDependencyRepository.findAllByTargetClass_Id(codeClass.getId()).stream()
+                .map(DependencyAnalysisResponse.DependencyEdge::from).toList();
     }
 
     private int nz(Integer value) { return value == null ? 0 : value; }

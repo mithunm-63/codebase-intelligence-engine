@@ -178,7 +178,7 @@ These are later production features:
 
 For the public Phase 1 demo, no private repository access is exposed and the analyzer itself does not yet exist.
 
-## Phase 2 public-demo settings
+## Phase 4 public-demo settings
 
 The backend accepts these environment variables:
 
@@ -189,4 +189,4 @@ MAX_JAVA_FILES=2000
 MAX_FILES=10000
 ```
 
-For Phase 2 the public GitHub mode is intentionally limited to public HTTPS GitHub repositories. Private repository access will be added only after authentication and GitHub OAuth/token handling are implemented.
+For Phase 4 the public GitHub mode is intentionally limited to public HTTPS GitHub repositories. Private repository access will be added only after authentication and GitHub OAuth/token handling are implemented.

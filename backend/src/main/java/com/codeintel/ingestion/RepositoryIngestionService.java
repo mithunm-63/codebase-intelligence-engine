@@ -15,6 +15,8 @@ import java.util.zip.ZipInputStream;
 import com.codeintel.api.dto.IngestionResponse;
 import com.codeintel.analysis.AstAnalysisService;
 import com.codeintel.analysis.CodeClassRepository;
+import com.codeintel.analysis.DependencyAnalysisService;
+import com.codeintel.dependency.DependencyAnalysisResult;
 import com.codeintel.parser.model.AstAnalysisResult;
 import com.codeintel.project.Project;
 import com.codeintel.project.ProjectRepository;
@@ -30,17 +32,20 @@ public class RepositoryIngestionService {
     private final GitHubRepositoryClient gitHubRepositoryClient;
     private final RepositoryLimits limits;
     private final AstAnalysisService astAnalysisService;
+    private final DependencyAnalysisService dependencyAnalysisService;
     private final CodeClassRepository codeClassRepository;
 
     public RepositoryIngestionService(ProjectRepository projectRepository,
                                       GitHubRepositoryClient gitHubRepositoryClient,
                                       RepositoryLimits limits,
                                       AstAnalysisService astAnalysisService,
+                                      DependencyAnalysisService dependencyAnalysisService,
                                       CodeClassRepository codeClassRepository) {
         this.projectRepository = projectRepository;
         this.gitHubRepositoryClient = gitHubRepositoryClient;
         this.limits = limits;
         this.astAnalysisService = astAnalysisService;
+        this.dependencyAnalysisService = dependencyAnalysisService;
         this.codeClassRepository = codeClassRepository;
     }
 
@@ -111,6 +116,9 @@ public class RepositoryIngestionService {
         project.setTestJavaFiles(scan.testJavaFiles());
 
         AstAnalysisResult ast = astAnalysisService.analyze(project, target);
+        DependencyAnalysisResult dependencies = dependencyAnalysisService.analyze(project, target);
+        project.setStatus(ProjectStatus.READY);
+        projectRepository.save(project);
         var indexedClasses = codeClassRepository.findAllByProject_IdOrderByQualifiedName(project.getId()).stream()
                 .limit(50).toList();
         return new IngestionResponse(
@@ -118,6 +126,7 @@ public class RepositoryIngestionService {
                 scan.javaFiles(), scan.mainJavaFiles(), scan.testJavaFiles(), scan.sampleFiles(),
                 ast.classCount(), ast.interfaceCount(), ast.enumCount(), ast.recordCount(),
                 ast.annotationCount(), ast.methodCount(), ast.constructorCount(), ast.fieldCount(), ast.importCount(),
+                dependencies.resolvedDependencyCount(), dependencies.dependencyOccurrences(), dependencies.unresolvedReferenceCount(),
                 ast.parseErrorCount(), ast.parseErrors(),
                 indexedClasses.stream().map(c -> c.getQualifiedName()).toList(),
                 indexedClasses.stream().map(c -> c.getId()).toList());
