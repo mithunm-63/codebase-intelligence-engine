@@ -5,5 +5,6 @@ import java.util.List;
 
 public interface ArchitectureRuleRepository extends JpaRepository<ArchitectureRule, Long> {
     List<ArchitectureRule> findAllByProject_IdOrderBySourceLayerAscTargetLayerAsc(String projectId);
+    long countByProject_Id(String projectId);
     void deleteAllByProject_Id(String projectId);
 }
