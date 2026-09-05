@@ -24,19 +24,21 @@ Request:
 Response contains:
 
 - project id
-- configured model
+- configured Gemini model
 - grounded natural-language answer
 - named evidence items returned by the codebase search layer
 
 The assistant supplies a bounded context containing relevant search results, a class catalog, dependency edges, and, when a class name is present in the question, its calculated risk and impact metrics.
 
-## Provider configuration
+## Gemini configuration
 
 The backend reads these environment variables:
 
-- `OPENAI_API_KEY` — required to enable the assistant
-- `OPENAI_MODEL` — optional; defaults to `gpt-5.6-luna`
-- `OPENAI_RESPONSES_URL` — optional; defaults to `https://api.openai.com/v1/responses`
+- `GEMINI_API_KEY` — required to enable the assistant
+- `GEMINI_MODEL` — optional; defaults to `gemini-3.8-flash`
+- `GEMINI_API_ENDPOINT` — optional; defaults to `https://generativelanguage.googleapis.com/v1beta/models`
+
+Gemini's `generateContent` REST API remains supported; Google's current documentation recommends the newer Interactions API for new applications, while `generateContent` continues to be supported. citeturn982459search3turn982459search2
 
 Never put the API key in the React frontend or in source control.
 
@@ -47,7 +49,7 @@ Never put the API key in the React frontend or in source control.
 - Only a bounded number of classes and dependency edges are included.
 - Each project is limited to 20 assistant requests per hour per backend instance.
 - Provider failures are translated into explicit API errors rather than silently producing an answer.
-- Responses are requested with `store: false`.
+- The request contains only the analyzed project context; the model is not treated as the source of truth.
 
 ## Architecture principle
 
@@ -58,7 +60,7 @@ Codebase Search + existing analysis metrics
      ↓
 Grounded evidence context
      ↓
-LLM explanation
+Gemini explanation
      ↓
 Answer + evidence references
 ```
