@@ -4,9 +4,9 @@ import com.codeintel.analysis.CodeClass;
 import com.codeintel.analysis.CodeClassRepository;
 import com.codeintel.analysis.CodeDependency;
 import com.codeintel.analysis.CodeDependencyRepository;
+import com.codeintel.impact.ImpactAnalysisService;
 import com.codeintel.risk.RiskAnalysisService;
 import com.codeintel.search.CodebaseSearchService;
-import com.codeintel.impact.ImpactAnalysisService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,9 +51,9 @@ public class CodebaseAskService {
             RiskAnalysisService riskAnalysisService,
             ImpactAnalysisService impactAnalysisService,
             ObjectMapper objectMapper,
-            @Value("${codeintel.ai.api-key:}") String apiKey,
-            @Value("${codeintel.ai.model:gpt-5.6-luna}") String model,
-            @Value("${codeintel.ai.endpoint:https://api.openai.com/v1/responses}") String endpoint) {
+            @Value("${OPENAI_API_KEY:${codeintel.ai.api-key:}}") String apiKey,
+            @Value("${OPENAI_MODEL:${codeintel.ai.model:gpt-5.6-luna}}") String model,
+            @Value("${OPENAI_RESPONSES_URL:${codeintel.ai.endpoint:https://api.openai.com/v1/responses}}") String endpoint) {
         this.classRepository = classRepository;
         this.dependencyRepository = dependencyRepository;
         this.searchService = searchService;
@@ -69,33 +69,27 @@ public class CodebaseAskService {
     public AskReport ask(String projectId, String question) {
         requireConfigured();
         String q = Optional.ofNullable(question).orElse("").trim();
-        if (q.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "question must not be blank.");
-        }
-        if (q.length() > MAX_QUESTION_LENGTH) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "question is too long; keep it under 600 characters.");
-        }
+        if (q.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "question must not be blank.");
+        if (q.length() > MAX_QUESTION_LENGTH) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "question is too long; keep it under 600 characters.");
         enforceRateLimit(projectId);
 
         List<CodeClass> classes = classRepository.findAllByProject_IdOrderByQualifiedName(projectId);
-        if (classes.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Analyze a repository before asking codebase questions.");
-        }
+        if (classes.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Analyze a repository before asking codebase questions.");
 
         CodebaseSearchService.SearchReport search = searchService.search(projectId, q, "ALL", 12);
         List<CodeDependency> dependencies = dependencyRepository.findAllBySourceClass_Project_Id(projectId);
         String context = buildContext(projectId, q, classes, dependencies, search);
 
         String answer = callModel(q, context);
-        return new AskReport(projectId, model, answer, search.results().stream().limit(12).map(CodebaseSearchService.Result::qualifiedName).filter(Objects::nonNull).toList());
+        return new AskReport(projectId, model, answer,
+                search.results().stream().limit(12).map(CodebaseSearchService.Result::qualifiedName).filter(Objects::nonNull).toList());
     }
 
     private String buildContext(String projectId, String question, List<CodeClass> classes,
                                 List<CodeDependency> dependencies, CodebaseSearchService.SearchReport search) {
         StringBuilder out = new StringBuilder();
         out.append("PROJECT_ID: ").append(projectId).append('\n');
-        out.append("USER_QUESTION: ").append(question).append("\n\n");
-        out.append("RELEVANT_SEARCH_RESULTS:\n");
+        out.append("USER_QUESTION: ").append(question).append("\n\nRELEVANT_SEARCH_RESULTS:\n");
         for (CodebaseSearchService.Result r : search.results()) {
             out.append("- ").append(r.kind()).append(" | ").append(r.name()).append(" | ")
                     .append(Optional.ofNullable(r.qualifiedName()).orElse(""))
@@ -103,63 +97,46 @@ public class CodebaseAskService {
                     .append(" | relation=").append(Optional.ofNullable(r.relationshipType()).orElse(""))
                     .append('\n');
         }
-
         out.append("\nCLASS_CATALOG:\n");
         classes.stream().limit(MAX_CLASSES).forEach(c -> out.append("- ")
                 .append(c.getName()).append(" | ").append(c.getQualifiedName())
-                .append(" | kind=").append(c.getKind())
-                .append(" | lines=").append(c.getLineCount())
-                .append(" | methods=").append(c.getMethodCount())
-                .append(" | fields=").append(c.getFieldCount())
-                .append('\n'));
-
+                .append(" | kind=").append(c.getKind()).append(" | lines=").append(c.getLineCount())
+                .append(" | methods=").append(c.getMethodCount()).append(" | fields=").append(c.getFieldCount()).append('\n'));
         out.append("\nDEPENDENCY_EDGES:\n");
         dependencies.stream().limit(MAX_DEPENDENCIES).forEach(d -> out.append("- ")
-                .append(d.getSourceClass().getQualifiedName()).append(" -> ")
-                .append(d.getTargetClass().getQualifiedName())
-                .append(" | type=").append(d.getType().name())
-                .append(" | line=").append(d.getSourceLine())
+                .append(d.getSourceClass().getQualifiedName()).append(" -> ").append(d.getTargetClass().getQualifiedName())
+                .append(" | type=").append(d.getType().name()).append(" | line=").append(d.getSourceLine())
                 .append(" | member=").append(Optional.ofNullable(d.getSourceMember()).orElse(""))
-                .append(" | occurrences=").append(d.getOccurrenceCount())
-                .append('\n'));
+                .append(" | occurrences=").append(d.getOccurrenceCount()).append('\n'));
 
         String normalized = question.toLowerCase(Locale.ROOT);
         for (CodeClass c : classes) {
             if (normalized.contains(c.getName().toLowerCase(Locale.ROOT))) {
                 try {
                     var risk = riskAnalysisService.analyzeClass(projectId, c.getId());
-                    out.append("\nTARGET_RISK:\n")
-                            .append(c.getQualifiedName()).append(" | score=").append(risk.score())
-                            .append(" | level=").append(risk.level())
-                            .append(" | fanIn=").append(risk.fanIn())
-                            .append(" | fanOut=").append(risk.fanOut())
-                            .append(" | maxComplexity=").append(risk.maxComplexity())
-                            .append(" | loc=").append(risk.lineCount())
-                            .append('\n');
+                    out.append("\nTARGET_RISK:\n").append(c.getQualifiedName())
+                            .append(" | score=").append(risk.score()).append(" | level=").append(risk.level())
+                            .append(" | fanIn=").append(risk.fanIn()).append(" | fanOut=").append(risk.fanOut())
+                            .append(" | maxComplexity=").append(risk.maxComplexity()).append(" | loc=").append(risk.lineCount()).append('\n');
                     var impact = impactAnalysisService.analyze(projectId, String.valueOf(c.getId()));
-                    out.append("TARGET_IMPACT:\n")
-                            .append("directDependents=").append(impact.directDependents())
-                            .append(" | affectedClasses=").append(impact.affectedClassCount())
-                            .append(" | maxDepth=").append(impact.maxDepth())
-                            .append(" | risk=").append(impact.riskLevel())
-                            .append('\n');
+                    out.append("TARGET_IMPACT:\n").append("directDependents=").append(impact.directDependents())
+                            .append(" | affectedClasses=").append(impact.affectedClassCount()).append(" | maxDepth=").append(impact.maxDepth())
+                            .append(" | risk=").append(impact.riskLevel()).append('\n');
                 } catch (RuntimeException ignored) {
-                    // Best-effort enrichment; the grounded dependency context remains authoritative.
+                    // Best effort enrichment; base graph/search facts remain authoritative.
                 }
                 break;
             }
         }
-
-        if (out.length() > MAX_CONTEXT_CHARS) return out.substring(0, MAX_CONTEXT_CHARS);
-        return out.toString();
+        return out.length() > MAX_CONTEXT_CHARS ? out.substring(0, MAX_CONTEXT_CHARS) : out.toString();
     }
 
     private String callModel(String question, String context) {
         String instructions = "You are Codebase Intelligence Engine, an explainable software architecture assistant. "
                 + "Answer only from the supplied analyzed-codebase context. Never invent classes, dependencies, lines, endpoints, risks, or behavior. "
-                + "When the evidence is insufficient, say exactly that. Distinguish measured facts from interpretation. "
-                + "Prefer concise developer-useful answers. When explaining risk, cite the concrete graph/metric evidence from context. "
-                + "The static-analysis engine is authoritative; you are only translating its evidence into natural language.";
+                + "When the evidence is insufficient, say so. Distinguish measured facts from interpretation. "
+                + "Prefer concise developer-useful answers and cite concrete class, dependency, risk, or impact evidence when available. "
+                + "The static-analysis engine is authoritative; you translate its evidence into natural language.";
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("model", model);
@@ -167,26 +144,25 @@ public class CodebaseAskService {
             payload.put("instructions", instructions);
             payload.put("input", "QUESTION:\n" + question + "\n\nANALYZED CODEBASE CONTEXT:\n" + context);
             String body = objectMapper.writeValueAsString(payload);
-
             HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
                     .timeout(Duration.ofSeconds(45))
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() >= 400) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI provider returned HTTP " + response.statusCode() + ".");
-            }
-            JsonNode root = objectMapper.readTree(response.body());
-            String text = extractOutputText(root);
+            if (response.statusCode() == 401) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI provider rejected the server API key.");
+            if (response.statusCode() == 429) throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "AI provider rate limit reached. Try again shortly.");
+            if (response.statusCode() >= 400) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI provider returned HTTP " + response.statusCode() + ".");
+            String text = extractOutputText(objectMapper.readTree(response.body()));
             if (text.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI provider returned no text output.");
             return text.trim();
         } catch (ResponseStatusException ex) {
             throw ex;
-        } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
+        } catch (IOException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Could not reach the AI provider.");
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI request was interrupted.");
         }
     }
 
@@ -205,34 +181,22 @@ public class CodebaseAskService {
                 out.append(node.get("text").asText());
             }
             node.fields().forEachRemaining(e -> collectText(e.getValue(), out));
-        } else if (node.isArray()) {
-            node.forEach(child -> collectText(child, out));
-        }
+        } else if (node.isArray()) node.forEach(child -> collectText(child, out));
     }
 
     private void requireConfigured() {
-        if (apiKey.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "AI assistant is not configured. Set OPENAI_API_KEY on the backend.");
-        }
+        if (apiKey.isBlank()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                "AI assistant is not configured. Set OPENAI_API_KEY on the backend.");
     }
 
     private void enforceRateLimit(String projectId) {
         long now = System.currentTimeMillis();
-        WindowCounter counter = counters.compute(projectId, (key, current) -> {
-            if (current == null || now - current.startedAt >= WINDOW_MILLIS) return new WindowCounter(now, 1);
-            if (current.count >= MAX_REQUESTS_PER_PROJECT) return new WindowCounter(current.startedAt, current.count + 1);
-            return new WindowCounter(current.startedAt, current.count + 1);
-        });
+        WindowCounter counter = counters.compute(projectId, (key, current) ->
+                current == null || now - current.startedAt >= WINDOW_MILLIS
+                        ? new WindowCounter(now, 1) : new WindowCounter(current.startedAt, current.count + 1));
         if (counter.count > MAX_REQUESTS_PER_PROJECT) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "AI question limit reached for this project. Try again later.");
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "AI question limit reached for this project. Try again later.");
         }
-    }
-
-    private void requireProject(String projectId) {
-        if (!classRepository.findAllByProject_IdOrderByQualifiedName(projectId).isEmpty()) return;
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found or has no analyzed classes.");
     }
 
     private record WindowCounter(long startedAt, int count) {}
