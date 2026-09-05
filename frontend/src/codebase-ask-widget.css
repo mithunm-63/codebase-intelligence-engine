@@ -1,0 +1,23 @@
+#codeintel-ask-widget { width: min(1080px, calc(100% - 56px)); margin: 20px auto 48px; }
+.ask-card { padding: 20px; border: 1px solid rgba(121,168,255,.13); border-radius: 18px; background: rgba(10,23,40,.82); box-shadow: 0 18px 50px rgba(0,0,0,.22); }
+.ask-heading, .ask-controls, .ask-answer-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.ask-heading > div { display:grid; gap:6px; }
+.ask-heading strong, .ask-answer-heading strong { font-size:18px; }
+.ask-heading span, .ask-answer-heading span { color:#72869c; font-size:12px; }
+.ask-live { color:#62e59b !important; padding:6px 9px; border-radius:999px; background:rgba(69,190,126,.08); white-space:nowrap; }
+.ask-muted { color:#72869c !important; white-space:nowrap; }
+.ask-examples { display:flex; flex-wrap:wrap; gap:7px; margin:15px 0 12px; }
+.ask-examples button { border:1px solid rgba(255,255,255,.08); border-radius:9px; padding:8px 10px; color:#9eb0c5; background:rgba(255,255,255,.035); }
+.ask-examples button:hover:not(:disabled) { color:#dce8f7; border-color:rgba(121,168,255,.35); background:rgba(121,168,255,.08); }
+.ask-controls { align-items:stretch; }
+#codeintel-ask-question { flex:1; min-height:86px; resize:vertical; padding:13px 14px; color:#edf3fb; border:1px solid rgba(255,255,255,.09); border-radius:12px; outline:none; background:rgba(0,0,0,.16); font:inherit; }
+#codeintel-ask-question:focus { border-color:rgba(121,168,255,.55); }
+.ask-primary { min-width:100px; border:0; border-radius:12px; padding:14px 16px; font-weight:800; color:#07111f; background:#a9c7ff; }
+.ask-primary:disabled, .ask-examples button:disabled { opacity:.5; cursor:not-allowed; }
+.ask-status { min-height:20px; margin-top:10px; color:#8295ab; font-size:12px; }
+.ask-answer { margin-top:10px; padding:15px; border-radius:13px; border:1px solid rgba(69,190,126,.15); background:rgba(69,190,126,.04); }
+.ask-answer-text { margin-top:12px; color:#d7e2ef; font-size:14px; line-height:1.7; }
+.ask-evidence { display:grid; gap:6px; margin-top:15px; }
+.ask-evidence strong { color:#aebdcd; font-size:12px; }
+.ask-evidence code { padding:7px 9px; border-radius:8px; background:rgba(255,255,255,.035); color:#91a6bd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (max-width:720px) { #codeintel-ask-widget { width:calc(100% - 28px); } .ask-controls { flex-direction:column; } .ask-primary { width:100%; } .ask-heading { flex-direction:column; } }
