@@ -1,11 +1,12 @@
 const NAV_ID = 'codeintel-quick-nav'
+const VIEW_KEY = 'codeintel-view'
 
 const sectionConfig = [
-  ['graph-card', 'Map', 'Architecture graph', false],
-  ['risk-dashboard', 'Risk', 'Code hotspots & risk', false],
-  ['architecture-dashboard', 'Rules', 'Architecture rules & drift', true],
-  ['impact-card', 'Impact', 'Change impact analysis', false],
-  ['class-browser', 'Types', 'Type index', true],
+  ['graph-card', 'Architecture map', false],
+  ['risk-dashboard', 'Code risk', false],
+  ['architecture-dashboard', 'Architecture rules', true],
+  ['impact-card', 'Change impact', true],
+  ['class-browser', 'Type index', true],
 ]
 
 const widgetConfig = [
@@ -13,13 +14,25 @@ const widgetConfig = [
   ['codeintel-history-widget', 'Repository history', true],
   ['codeintel-historical-risk-widget', 'Historical risk', false],
   ['codeintel-ask-widget', 'Codebase assistant', false],
+  ['codeintel-search-widget', 'Codebase search', true],
+  ['search-widget-panel', 'Codebase search', true],
 ]
 
+const views = {
+  overview: new Set(['result-card','architecture-graph','code-hotspots-risk','codeintel-historical-risk-widget','codeintel-ask-widget']),
+  architecture: new Set(['architecture-graph','circular-dependencies','architecture-rules-drift','change-impact-analysis']),
+  risk: new Set(['code-hotspots-risk','codeintel-historical-risk-widget','change-impact-analysis']),
+  changes: new Set(['codeintel-history-widget','codeintel-historical-risk-widget','incremental-analysis']),
+  explore: null,
+}
+
+function byId(id) { return document.getElementById(id) }
+
 function scrollToId(id) {
-  const node = document.getElementById(id)
+  const node = byId(id)
   if (!node) return
-  const nav = document.getElementById(NAV_ID)
-  const offset = (nav?.getBoundingClientRect().height || 0) + 22
+  const nav = byId(NAV_ID)
+  const offset = (nav?.getBoundingClientRect().height || 0) + 20
   const top = node.getBoundingClientRect().top + window.scrollY - offset
   window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
 }
@@ -48,7 +61,7 @@ function addSectionToggle(card, label, collapsed) {
 function addWidgetToggle(panel, label, collapsed) {
   if (!panel || panel.querySelector('.ux-widget-toggle')) return
   panel.classList.add('ux-widget-card')
-  const header = panel.querySelector('.ep-head, .history-head, .hr-head, .ask-head') || panel.firstElementChild
+  const header = panel.querySelector('.ep-head, .history-head, .hr-head, .ask-head, .search-head') || panel.firstElementChild
   if (!header) return
   const button = document.createElement('button')
   button.type = 'button'
@@ -65,77 +78,143 @@ function addWidgetToggle(panel, label, collapsed) {
   if (collapsed) panel.classList.add('ux-widget-collapsed')
 }
 
-function enhanceSections() {
-  sectionConfig.forEach(([className, label, fallbackId, collapsed]) => {
-    const card = document.querySelector(`.${className}`)
-    if (!card) return
-    if (!card.id) card.id = fallbackId.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    if (className !== 'graph-card') addSectionToggle(card, label, collapsed)
+function normalizeIds() {
+  const mappings = [
+    ['graph-card', 'architecture-graph'],
+    ['risk-dashboard', 'code-hotspots-risk'],
+    ['architecture-dashboard', 'architecture-rules-drift'],
+    ['impact-card', 'change-impact-analysis'],
+    ['class-browser', 'type-index'],
+  ]
+  mappings.forEach(([className, id]) => {
+    const node = document.querySelector(`.${className}`)
+    if (node && !node.id) node.id = id
   })
-  widgetConfig.forEach(([id, label, collapsed]) => {
-    const panel = document.getElementById(id)
-    if (panel) addWidgetToggle(panel, label, collapsed)
-  })
+  const cycle = [...document.querySelectorAll('.analysis-card')].find(node => /Circular dependencies/i.test(node.textContent || ''))
+  if (cycle && !cycle.id) cycle.id = 'circular-dependencies'
+}
+
+function decorateOverview() {
+  const result = byId('analysis-overview')
+  if (!result || result.querySelector('.ux-next-actions')) return
+  const wrap = document.createElement('div')
+  wrap.className = 'ux-next-actions'
+  wrap.innerHTML = `
+    <div class="ux-next-heading"><strong>What should I look at?</strong><span>Start with the highest-signal findings, then drill down.</span></div>
+    <div class="ux-action-grid">
+      <button type="button" data-focus="risk"><b>Risk</b><span>Find code most likely to cause problems.</span></button>
+      <button type="button" data-focus="architecture"><b>Architecture</b><span>Inspect dependencies, cycles and rule violations.</span></button>
+      <button type="button" data-focus="changes"><b>Changes</b><span>See what has been changing and what is getting riskier.</span></button>
+    </div>`
+  result.appendChild(wrap)
+  wrap.querySelectorAll('[data-focus]').forEach(button => button.addEventListener('click', () => setView(button.dataset.focus)))
+}
+
+function availableIds() {
+  return new Set([
+    'analysis-overview', 'architecture-graph', 'code-hotspots-risk', 'architecture-rules-drift',
+    'change-impact-analysis', 'type-index', 'circular-dependencies', 'execution-paths-widget-panel',
+    'codeintel-ask-widget', 'codeintel-history-widget', 'codeintel-historical-risk-widget',
+    'codeintel-search-widget', 'search-widget-panel', 'incremental-analysis',
+  ].filter(id => byId(id)))
 }
 
 function ensureNav() {
   const workspace = document.querySelector('.workspace-card')
   const result = document.querySelector('.result-card')
   if (!workspace || !result) return
+  result.id = result.id || 'analysis-overview'
 
-  let nav = document.getElementById(NAV_ID)
+  let nav = byId(NAV_ID)
   if (!nav) {
-    if (!result.id) result.id = 'analysis-overview'
     nav = document.createElement('nav')
     nav.id = NAV_ID
     nav.className = 'ux-nav'
-    nav.setAttribute('aria-label', 'Analysis sections')
+    nav.setAttribute('aria-label', 'Analysis views')
     result.insertAdjacentElement('afterend', nav)
   }
 
-  const items = [
-    ['Overview', result.id],
-    ['Map', 'architecture-graph'],
-    ['Risk', 'code-hotspots-risk'],
-    ['Rules', 'architecture-rules-drift'],
-    ['Impact', 'change-impact-analysis'],
-    ['Types', 'type-index'],
-    ['Paths', 'execution-paths-widget-panel'],
-    ['Assistant', 'codeintel-ask-widget'],
-    ['History', 'codeintel-history-widget'],
-    ['History risk', 'codeintel-historical-risk-widget'],
-  ]
+  nav.innerHTML = `
+    <span class="ux-nav-label">Focus</span>
+    <div class="ux-view-switch" role="tablist" aria-label="Analysis focus">
+      <button type="button" data-view="overview">Overview</button>
+      <button type="button" data-view="architecture">Architecture</button>
+      <button type="button" data-view="risk">Risk</button>
+      <button type="button" data-view="changes">Changes</button>
+      <button type="button" data-view="explore">Explore all</button>
+    </div>
+    <div class="ux-nav-spacer"></div>
+    <button type="button" class="ux-top-action" data-scroll="analysis-overview">Back to overview</button>`
 
-  nav.innerHTML = '<span class="ux-nav-label">Quick access</span>'
-  items.forEach(([label, id]) => {
-    if (!document.getElementById(id)) return
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.textContent = label
-    button.dataset.target = id
-    button.addEventListener('click', () => scrollToId(id))
-    nav.appendChild(button)
+  const available = availableIds()
+  nav.querySelectorAll('[data-view]').forEach(button => {
+    const view = button.dataset.view
+    button.hidden = view !== 'overview' && view !== 'explore' && ![...views[view] || []].some(id => available.has(id))
+    button.addEventListener('click', () => setView(view))
+  })
+  nav.querySelector('[data-scroll]')?.addEventListener('click', () => scrollToId('analysis-overview'))
+}
+
+function classifyNodes() {
+  return [
+    'architecture-graph', 'circular-dependencies', 'code-hotspots-risk', 'architecture-rules-drift',
+    'change-impact-analysis', 'type-index', 'execution-paths-widget-panel', 'codeintel-ask-widget',
+    'codeintel-history-widget', 'codeintel-historical-risk-widget', 'codeintel-search-widget',
+    'search-widget-panel', 'incremental-analysis',
+  ].map(id => byId(id)).filter(Boolean)
+}
+
+function setView(view) {
+  const selected = view || 'overview'
+  sessionStorage.setItem(VIEW_KEY, selected)
+  document.body.dataset.codeintelView = selected
+  const allowed = views[selected]
+  classifyNodes().forEach(node => {
+    const show = selected === 'explore' || allowed?.has(node.id)
+    node.classList.toggle('ux-view-hidden', !show)
+  })
+  const nav = byId(NAV_ID)
+  nav?.querySelectorAll('[data-view]').forEach(button => {
+    const active = button.dataset.view === selected
+    button.classList.toggle('active', active)
+    button.setAttribute('aria-selected', String(active))
+  })
+  if (selected !== 'overview') requestAnimationFrame(() => scrollToId([...views[selected] || []].find(id => byId(id))))
+}
+
+function enhanceSections() {
+  sectionConfig.forEach(([className, label, collapsed]) => {
+    const card = document.querySelector(`.${className}`)
+    if (card) addSectionToggle(card, label, collapsed)
+  })
+  widgetConfig.forEach(([id, label, collapsed]) => {
+    const panel = byId(id)
+    if (panel) addWidgetToggle(panel, label, collapsed)
   })
 }
 
+function enhance() {
+  normalizeIds()
+  ensureNav()
+  enhanceSections()
+  decorateOverview()
+  const current = sessionStorage.getItem(VIEW_KEY) || 'overview'
+  setView(current)
+}
+
 function setupBackToTop() {
-  if (document.getElementById('ux-back-top')) return
+  if (byId('ux-back-top')) return
   const button = document.createElement('button')
   button.id = 'ux-back-top'
   button.className = 'ux-back-top'
   button.type = 'button'
-  button.setAttribute('aria-label', 'Back to top')
+  button.setAttribute('aria-label', 'Back to overview')
   button.textContent = '↑'
-  button.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }))
+  button.addEventListener('click', () => scrollToId('analysis-overview'))
   document.body.appendChild(button)
   const update = () => button.classList.toggle('visible', window.scrollY > 500)
   window.addEventListener('scroll', update, { passive: true })
   update()
-}
-
-function enhance() {
-  ensureNav()
-  enhanceSections()
 }
 
 let enhanceQueued = false
