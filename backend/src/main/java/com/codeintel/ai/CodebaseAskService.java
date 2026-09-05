@@ -38,7 +38,7 @@ public class CodebaseAskService {
     private final CodebaseSearchService searchService;
     private final RiskAnalysisService riskAnalysisService;
     private final ImpactAnalysisService impactAnalysisService;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient;
     private final String apiKey;
     private final String model;
@@ -50,14 +50,12 @@ public class CodebaseAskService {
             CodeDependencyRepository dependencyRepository,
             CodebaseSearchService searchService,
             RiskAnalysisService riskAnalysisService,
-            ImpactAnalysisService impactAnalysisService,
-            ObjectMapper objectMapper) {
+            ImpactAnalysisService impactAnalysisService) {
         this.classRepository = classRepository;
         this.dependencyRepository = dependencyRepository;
         this.searchService = searchService;
         this.riskAnalysisService = riskAnalysisService;
         this.impactAnalysisService = impactAnalysisService;
-        this.objectMapper = objectMapper;
         this.apiKey = env("GEMINI_API_KEY");
         this.model = envOrDefault("GEMINI_MODEL", "gemini-3.8-flash");
         this.endpoint = envOrDefault("GEMINI_API_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta/models");
