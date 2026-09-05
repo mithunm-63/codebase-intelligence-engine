@@ -19,16 +19,25 @@ const widgetConfig = [
 ]
 
 const views = {
-  overview: new Set(['result-card','architecture-graph','code-hotspots-risk','codeintel-historical-risk-widget','codeintel-ask-widget']),
-  architecture: new Set(['architecture-graph','circular-dependencies','architecture-rules-drift','change-impact-analysis']),
-  risk: new Set(['code-hotspots-risk','codeintel-historical-risk-widget','change-impact-analysis']),
-  changes: new Set(['codeintel-history-widget','codeintel-historical-risk-widget','incremental-analysis']),
+  overview: new Set(['result-card', 'architecture-graph', 'code-hotspots-risk', 'codeintel-historical-risk-widget', 'codeintel-ask-widget']),
+  architecture: new Set(['architecture-graph', 'circular-dependencies', 'architecture-rules-drift', 'change-impact-analysis']),
+  risk: new Set(['code-hotspots-risk', 'codeintel-historical-risk-widget', 'change-impact-analysis']),
+  changes: new Set(['codeintel-history-widget', 'codeintel-historical-risk-widget', 'incremental-analysis']),
   explore: null,
+}
+
+const viewDescriptions = {
+  overview: ['Overview', 'Start here', 'Key results, map, risk and assistant.'],
+  architecture: ['Architecture', 'Understand structure', 'Explore dependencies, cycles, rules and impact.'],
+  risk: ['Risk', 'Find danger areas', 'See risky code and likely blast radius.'],
+  changes: ['Changes', 'See what moved', 'Review Git history and change pressure.'],
+  explore: ['Explore all', 'Full technical view', 'Show every available analysis section.'],
 }
 
 function byId(id) { return document.getElementById(id) }
 
 function scrollToId(id) {
+  if (!id) return
   const node = byId(id)
   if (!node) return
   const nav = byId(NAV_ID)
@@ -45,6 +54,7 @@ function addSectionToggle(card, label, collapsed) {
   button.className = 'ux-collapse'
   button.setAttribute('aria-expanded', String(!collapsed))
   button.textContent = collapsed ? 'Show' : 'Hide'
+  button.title = `${collapsed ? 'Show' : 'Hide'} ${label}`
   button.addEventListener('click', () => {
     const isCollapsed = card.classList.toggle('ux-collapsed')
     button.textContent = isCollapsed ? 'Show' : 'Hide'
@@ -130,29 +140,30 @@ function ensureNav() {
     nav = document.createElement('nav')
     nav.id = NAV_ID
     nav.className = 'ux-nav'
-    nav.setAttribute('aria-label', 'Analysis views')
+    nav.setAttribute('aria-label', 'Analysis focus')
     result.insertAdjacentElement('afterend', nav)
   }
 
   nav.innerHTML = `
-    <span class="ux-nav-label">Focus</span>
-    <div class="ux-view-switch" role="tablist" aria-label="Analysis focus">
-      <button type="button" data-view="overview">Overview</button>
-      <button type="button" data-view="architecture">Architecture</button>
-      <button type="button" data-view="risk">Risk</button>
-      <button type="button" data-view="changes">Changes</button>
-      <button type="button" data-view="explore">Explore all</button>
+    <div class="ux-nav-heading">
+      <div><strong>Explore your codebase</strong><span>Choose a view based on what you need to understand.</span></div>
     </div>
-    <div class="ux-nav-spacer"></div>
-    <button type="button" class="ux-top-action" data-scroll="analysis-overview">Back to overview</button>`
+    <div class="ux-view-switch" role="tablist" aria-label="Analysis focus"></div>`
 
+  const switcher = nav.querySelector('.ux-view-switch')
   const available = availableIds()
-  nav.querySelectorAll('[data-view]').forEach(button => {
-    const view = button.dataset.view
-    button.hidden = view !== 'overview' && view !== 'explore' && ![...views[view] || []].some(id => available.has(id))
+  Object.entries(viewDescriptions).forEach(([view, [label, kicker, description]]) => {
+    const required = views[view]
+    const hasContent = view === 'overview' || view === 'explore' || [...required].some(id => available.has(id))
+    if (!hasContent) return
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset.view = view
+    button.innerHTML = `<b>${label}</b><span>${kicker}</span><small>${description}</small>`
+    button.setAttribute('role', 'tab')
     button.addEventListener('click', () => setView(view))
+    switcher.appendChild(button)
   })
-  nav.querySelector('[data-scroll]')?.addEventListener('click', () => scrollToId('analysis-overview'))
 }
 
 function classifyNodes() {
