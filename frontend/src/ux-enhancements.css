@@ -1,0 +1,19 @@
+/* User-experience layer: keeps the intelligence dense without making the dashboard overwhelming. */
+.ux-nav{position:sticky;top:10px;z-index:30;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0;padding:10px 12px;border:1px solid rgba(121,168,255,.16);border-radius:14px;background:rgba(7,17,31,.88);backdrop-filter:blur(14px);box-shadow:0 12px 28px rgba(0,0,0,.18)}
+.ux-nav-label{margin-right:3px;color:#8295ab;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.ux-nav button{border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:7px 11px;color:#a9bbcf;background:rgba(255,255,255,.035);font-size:11px;font-weight:700;transition:.15s ease}
+.ux-nav button:hover,.ux-nav button:focus-visible{color:#eaf1fb;border-color:rgba(121,168,255,.38);background:rgba(121,168,255,.1);outline:none}
+.ux-nav button.active{color:#eef5ff;background:rgba(121,168,255,.16);border-color:rgba(121,168,255,.42)}
+.ux-collapse{margin-left:auto;flex:0 0 auto;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:6px 9px;color:#9eb0c5;background:rgba(255,255,255,.035);font-size:10px;font-weight:700}
+.ux-collapse:hover,.ux-collapse:focus-visible{color:#eaf1fb;border-color:rgba(121,168,255,.35);outline:none}
+.ux-collapsed > :not(.section-title):not(.ux-section-summary){display:none!important}
+.ux-collapsed{padding-bottom:12px}
+.ux-section-summary{display:none;margin:-2px 0 0;color:#72869c;font-size:11px}
+.ux-collapsed .ux-section-summary{display:block}
+.ux-compact-hint{display:flex;align-items:center;gap:8px;margin-top:10px;color:#72869c;font-size:11px}
+.ux-compact-hint strong{color:#b9cce3}
+.ux-back-top{position:fixed;right:22px;bottom:22px;z-index:50;border:1px solid rgba(121,168,255,.3);border-radius:999px;width:40px;height:40px;color:#dce8f7;background:rgba(10,23,40,.9);box-shadow:0 12px 30px rgba(0,0,0,.28);opacity:0;pointer-events:none;transform:translateY(8px);transition:.18s ease}
+.ux-back-top.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
+.ux-status-line{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:10px 12px;border-radius:11px;background:rgba(69,190,126,.045);border:1px solid rgba(69,190,126,.11);color:#9fdab4;font-size:11px}
+.ux-status-line span{color:#72869c}
+@media(max-width:760px){.ux-nav{top:4px}.ux-nav-label{width:100%}.ux-nav button{padding:7px 10px}.ux-back-top{right:14px;bottom:14px}.ux-status-line{align-items:flex-start;flex-direction:column}}
