@@ -73,8 +73,8 @@ public class GitHistoryService {
         for (JsonNode commit : commits) {
             if (commitItems.size() >= count) break;
             String sha = text(commit, "sha", "");
-            String detailUrl = "https://api.github.com/repos/" + ownerRepo + "/commits/" + sha;
-            JsonNode detail = githubGet(detailUrl);
+            if (sha.isBlank()) continue;
+            JsonNode detail = githubGet("https://api.github.com/repos/" + ownerRepo + "/commits/" + sha);
             JsonNode commitNode = detail.path("commit");
             String message = firstLine(text(commitNode, "message", ""));
             String author = commitNode.path("author").path("name").asText(
@@ -89,8 +89,7 @@ public class GitHistoryService {
             deletions += commitDelete;
             authors.add(author);
             if (!date.equals(Instant.EPOCH)) {
-                String day = LocalDate.ofInstant(date, ZoneOffset.UTC).toString();
-                daily.merge(day, 1, Integer::sum);
+                daily.merge(LocalDate.ofInstant(date, ZoneOffset.UTC).toString(), 1, Integer::sum);
             }
 
             if (detail.path("files").isArray()) {
@@ -112,7 +111,7 @@ public class GitHistoryService {
         List<FileHistory> hotspots = files.values().stream()
                 .map(FileAggregate::toHistory)
                 .sorted(Comparator.comparingInt(FileHistory::churn).reversed()
-                        .thenComparingInt(FileHistory::commits).reversed())
+                        .thenComparing(Comparator.comparingInt(FileHistory::commits).reversed()))
                 .limit(12)
                 .toList();
 
