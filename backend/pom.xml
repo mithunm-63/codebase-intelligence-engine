@@ -19,6 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <jackson2.version>2.21.5</jackson2.version>
     </properties>
 
     <dependencies>
@@ -26,10 +27,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
-        <!-- Provides the managed Jackson stack and ObjectMapper auto-configuration used by the Gemini client. -->
+        <!-- Explicit Jackson 2 databind for repository metadata and Gemini JSON parsing. -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-json</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
