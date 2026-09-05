@@ -38,7 +38,7 @@ The backend reads these environment variables:
 - `GEMINI_MODEL` — optional; defaults to `gemini-3.8-flash`
 - `GEMINI_API_ENDPOINT` — optional; defaults to `https://generativelanguage.googleapis.com/v1beta/models`
 
-Gemini's `generateContent` REST API remains supported; Google's current documentation recommends the newer Interactions API for new applications, while `generateContent` continues to be supported. citeturn982459search3turn982459search2
+Gemini's `generateContent` REST API remains supported, although Google's current Gemini documentation recommends the newer Interactions API for new applications. The implementation intentionally keeps the provider adapter isolated so it can be migrated later without changing the codebase-analysis layer.
 
 Never put the API key in the React frontend or in source control.
 
