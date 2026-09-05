@@ -19,6 +19,7 @@
 - Phase 12: Git/GitHub history intelligence
 - Phase 13: persistent and incremental Git/GitHub history synchronization
 - Phase 14: historical risk intelligence combining current structural risk with Git change pressure
+- Phase 15: revision-aware incremental code analysis with no-op and non-Java change preservation
 
 ## Analysis capabilities
 
@@ -36,6 +37,8 @@
 - Persistent incremental Git history synchronization
 - Historical risk scoring from static risk + repository change pressure
 - Recent-vs-older change trend classification
+- Revision-aware analysis that skips work when the analyzed GitHub revision is already current
+- Changed-file detection and preservation of the Java intelligence model for non-Java-only revisions
 
 ## Public API highlights
 
@@ -57,11 +60,12 @@
 - `POST /api/projects/{projectId}/history/sync?commits=25`
 - `GET /api/projects/{projectId}/history/persistent?commits=25`
 - `GET /api/projects/{projectId}/analysis/historical-risk`
+- `POST /api/projects/{projectId}/analysis/incremental/refresh`
 
 ## Deployment
 
 The application remains deployable through the same GitHub → Vercel/Render workflow. The production-style free-tier deployment uses managed PostgreSQL, Neo4j, and Redis where configured. Backend secrets remain server-side.
 
-## Phase 14
+## Phase 15
 
-Historical risk combines the deterministic static-analysis score with persisted Git change pressure. The dashboard ranks classes by the combined score and shows commit frequency, churn, and recent-vs-older trend so developers can prioritize high-risk areas that are also actively changing.
+The incremental refresh compares the current GitHub head with the last analyzed revision stored in `code_analysis_state`. Unchanged revisions take a fast no-op path. Revisions containing only non-Java changes update the baseline without rebuilding Java symbols. Java changes use the existing safe full-analysis pipeline while preserving revision detection and changed-file reporting, leaving a clean foundation for future file-scoped AST persistence.
