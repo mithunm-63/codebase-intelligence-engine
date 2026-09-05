@@ -1,6 +1,7 @@
 const state = { projectId: null, mounted: false, loading: false };
 const originalFetch = window.fetch.bind(window);
 const mount = document.getElementById('codeintel-history-widget');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || window.__CODEINT_API_BASE_URL__ || '').replace(/\/$/, '');
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
@@ -46,9 +47,9 @@ async function load(force = false) {
   if (!state.projectId || state.loading) return;
   state.loading = true;
   const content = document.getElementById('history-content');
-  if (content && !force) content.innerHTML = '<div class="history-loading">Loading Git history…</div>';
+  if (content) content.innerHTML = '<div class="history-loading">Loading Git history…</div>';
   try {
-    const response = await originalFetch(`${window.__CODEINT_API_BASE__ || ''}/api/projects/${encodeURIComponent(state.projectId)}/history?commits=25`, { headers: { 'Accept': 'application/json' } });
+    const response = await originalFetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(state.projectId)}/history?commits=25`, { headers: { 'Accept': 'application/json' } });
     if (!response.ok) throw new Error((await response.text()) || `History request failed (${response.status})`);
     render(await response.json());
   } catch (error) {
@@ -60,7 +61,7 @@ window.fetch = async (...args) => {
   try {
     const input = args[0];
     const url = typeof input === 'string' ? input : input?.url || '';
-    if (/\/api\/projects\/[^/]+\/ingest\/?(?:\?|$)/.test(url) && response.ok) {
+    if (/\/api\/projects\/[^/]+\/ingest(?:\/[^/?#]+)?(?:\?|$)/.test(url) && response.ok) {
       const match = url.match(/\/api\/projects\/([^/]+)\/ingest/);
       if (match) { state.projectId = decodeURIComponent(match[1]); setTimeout(() => load(false), 400); }
     }
