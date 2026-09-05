@@ -8,6 +8,13 @@ const sectionConfig = [
   ['class-browser', 'Types', 'Type index', true],
 ]
 
+const widgetConfig = [
+  ['execution-paths-widget-panel', 'Execution paths', true],
+  ['codeintel-history-widget', 'Repository history', true],
+  ['codeintel-historical-risk-widget', 'Historical risk', false],
+  ['codeintel-ask-widget', 'Codebase assistant', false],
+]
+
 function scrollToId(id) {
   const node = document.getElementById(id)
   if (!node) return
@@ -38,6 +45,26 @@ function addSectionToggle(card, label, collapsed) {
   card.appendChild(summary)
 }
 
+function addWidgetToggle(panel, label, collapsed) {
+  if (!panel || panel.querySelector('.ux-widget-toggle')) return
+  panel.classList.add('ux-widget-card')
+  const header = panel.querySelector('.ep-head, .history-head, .hr-head, .ask-head') || panel.firstElementChild
+  if (!header) return
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'ux-widget-toggle'
+  button.setAttribute('aria-expanded', String(!collapsed))
+  button.textContent = collapsed ? 'Show' : 'Hide'
+  button.title = `${collapsed ? 'Show' : 'Hide'} ${label}`
+  button.addEventListener('click', () => {
+    const isCollapsed = panel.classList.toggle('ux-widget-collapsed')
+    button.textContent = isCollapsed ? 'Show' : 'Hide'
+    button.setAttribute('aria-expanded', String(!isCollapsed))
+  })
+  header.appendChild(button)
+  if (collapsed) panel.classList.add('ux-widget-collapsed')
+}
+
 function enhanceSections() {
   sectionConfig.forEach(([className, label, fallbackId, collapsed]) => {
     const card = document.querySelector(`.${className}`)
@@ -45,30 +72,29 @@ function enhanceSections() {
     if (!card.id) card.id = fallbackId.toLowerCase().replace(/[^a-z0-9]+/g, '-')
     if (className !== 'graph-card') addSectionToggle(card, label, collapsed)
   })
-
-  const extra = [
-    ['execution-paths-widget-panel', 'Paths'],
-    ['codeintel-ask-widget', 'Assistant'],
-    ['codeintel-history-widget', 'History'],
-    ['codeintel-search-widget', 'Search'],
-    ['search-widget-panel', 'Search'],
-  ]
-  return extra.filter(([id]) => document.getElementById(id))
+  widgetConfig.forEach(([id, label, collapsed]) => {
+    const panel = document.getElementById(id)
+    if (panel) addWidgetToggle(panel, label, collapsed)
+  })
 }
 
 function ensureNav() {
   const workspace = document.querySelector('.workspace-card')
   const result = document.querySelector('.result-card')
-  if (!workspace || !result || document.getElementById(NAV_ID)) return
+  if (!workspace || !result) return
 
-  const nav = document.createElement('nav')
-  nav.id = NAV_ID
-  nav.className = 'ux-nav'
-  nav.setAttribute('aria-label', 'Analysis sections')
-  nav.innerHTML = '<span class="ux-nav-label">Quick access</span>'
+  let nav = document.getElementById(NAV_ID)
+  if (!nav) {
+    if (!result.id) result.id = 'analysis-overview'
+    nav = document.createElement('nav')
+    nav.id = NAV_ID
+    nav.className = 'ux-nav'
+    nav.setAttribute('aria-label', 'Analysis sections')
+    result.insertAdjacentElement('afterend', nav)
+  }
 
   const items = [
-    ['Overview', result.id || 'analysis-overview'],
+    ['Overview', result.id],
     ['Map', 'architecture-graph'],
     ['Risk', 'code-hotspots-risk'],
     ['Rules', 'architecture-rules-drift'],
@@ -77,11 +103,12 @@ function ensureNav() {
     ['Paths', 'execution-paths-widget-panel'],
     ['Assistant', 'codeintel-ask-widget'],
     ['History', 'codeintel-history-widget'],
+    ['History risk', 'codeintel-historical-risk-widget'],
   ]
 
-  if (!result.id) result.id = 'analysis-overview'
-  const available = items.filter(([, id]) => document.getElementById(id))
-  available.forEach(([label, id]) => {
+  nav.innerHTML = '<span class="ux-nav-label">Quick access</span>'
+  items.forEach(([label, id]) => {
+    if (!document.getElementById(id)) return
     const button = document.createElement('button')
     button.type = 'button'
     button.textContent = label
@@ -89,18 +116,6 @@ function ensureNav() {
     button.addEventListener('click', () => scrollToId(id))
     nav.appendChild(button)
   })
-
-  result.insertAdjacentElement('afterend', nav)
-}
-
-function enhance() {
-  ensureNav()
-  enhanceSections()
-
-  const history = document.getElementById('codeintel-history-widget')
-  if (history) history.id = 'codeintel-history-widget'
-  const assistant = document.getElementById('codeintel-ask-widget')
-  if (assistant) assistant.id = 'codeintel-ask-widget'
 }
 
 function setupBackToTop() {
@@ -118,7 +133,20 @@ function setupBackToTop() {
   update()
 }
 
-const observer = new MutationObserver(() => enhance())
+function enhance() {
+  ensureNav()
+  enhanceSections()
+}
+
+let enhanceQueued = false
+const observer = new MutationObserver(() => {
+  if (enhanceQueued) return
+  enhanceQueued = true
+  requestAnimationFrame(() => {
+    enhanceQueued = false
+    enhance()
+  })
+})
 observer.observe(document.body, { childList: true, subtree: true })
 
 requestAnimationFrame(() => {
